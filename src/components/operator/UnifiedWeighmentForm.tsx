@@ -145,19 +145,42 @@ export default function UnifiedWeighmentForm({ liveWeight, isStable }: UnifiedWe
           </CardHeader>
           <CardContent className="space-y-4">
             {/* Operation Type Selector */}
-            <div className="space-y-2">
-              <Label htmlFor="operation-type">Operation Type</Label>
-              <Select value={operationType} onValueChange={(v) => setOperationType(v as OperationType)}>
-                <SelectTrigger id="operation-type">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="new">New - Fresh weighment (Gross or One-Time)</SelectItem>
-                  <SelectItem value="update">Update - Round-Trip Tare entry</SelectItem>
-                  <SelectItem value="use-existing">Use Existing - Open Bill case</SelectItem>
-                  <SelectItem value="stored-tare">Stored Tare - Shuttle trips</SelectItem>
-                </SelectContent>
-              </Select>
+            <div className="space-y-3">
+              <Label>Operation Type</Label>
+              <div className="flex gap-2 p-1 bg-muted rounded-lg">
+                <Button
+                  type="button"
+                  variant={operationType === 'new' ? 'default' : 'ghost'}
+                  onClick={() => setOperationType('new')}
+                  className="flex-1"
+                >
+                  New
+                </Button>
+                <Button
+                  type="button"
+                  variant={operationType === 'update' ? 'default' : 'ghost'}
+                  onClick={() => setOperationType('update')}
+                  className="flex-1"
+                >
+                  Update
+                </Button>
+                <Button
+                  type="button"
+                  variant={operationType === 'use-existing' ? 'default' : 'ghost'}
+                  onClick={() => setOperationType('use-existing')}
+                  className="flex-1"
+                >
+                  Use Existing
+                </Button>
+                <Button
+                  type="button"
+                  variant={operationType === 'stored-tare' ? 'default' : 'ghost'}
+                  onClick={() => setOperationType('stored-tare')}
+                  className="flex-1"
+                >
+                  Stored Tare
+                </Button>
+              </div>
             </div>
 
             {/* Dynamic Fields Based on Operation Type */}
