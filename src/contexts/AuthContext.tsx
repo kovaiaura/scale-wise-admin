@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState } from 'react';
 
 export type UserRole = 'admin' | 'operator' | 'viewer';
 
@@ -20,15 +20,13 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [user, setUser] = useState<User | null>(null);
+const getInitialUser = (): User | null => {
+  const storedUser = localStorage.getItem('weighbridge_user');
+  return storedUser ? JSON.parse(storedUser) : null;
+};
 
-  useEffect(() => {
-    const storedUser = localStorage.getItem('weighbridge_user');
-    if (storedUser) {
-      setUser(JSON.parse(storedUser));
-    }
-  }, []);
+export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const [user, setUser] = useState<User | null>(getInitialUser);
 
   const login = async (tenantId: string, username: string, password: string) => {
     // Mock authentication - replace with real API call
