@@ -2,8 +2,17 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
-import Index from "./pages/Index";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { AuthProvider } from "./contexts/AuthContext";
+import { NotificationProvider } from "./contexts/NotificationContext";
+import { AppLayout } from "./components/layout/AppLayout";
+import Login from "./pages/Login";
+import Dashboard from "./pages/Dashboard";
+import OperatorConsole from "./pages/OperatorConsole";
+import Weighments from "./pages/Weighments";
+import Reports from "./pages/Reports";
+import MastersVehicles from "./pages/MastersVehicles";
+import SettingsProfile from "./pages/SettingsProfile";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -14,11 +23,27 @@ const App = () => (
       <Toaster />
       <Sonner />
       <BrowserRouter>
-        <Routes>
-          <Route path="/" element={<Index />} />
-          {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-          <Route path="*" element={<NotFound />} />
-        </Routes>
+        <AuthProvider>
+          <NotificationProvider>
+            <Routes>
+              <Route path="/login" element={<Login />} />
+              <Route path="/" element={<AppLayout />}>
+                <Route index element={<Navigate to="/dashboard" replace />} />
+                <Route path="dashboard" element={<Dashboard />} />
+                <Route path="operator" element={<OperatorConsole />} />
+                <Route path="weighments" element={<Weighments />} />
+                <Route path="reports" element={<Reports />} />
+                <Route path="masters/vehicles" element={<MastersVehicles />} />
+                <Route path="masters/parties" element={<div>Parties Master (Coming Soon)</div>} />
+                <Route path="masters/products" element={<div>Products Master (Coming Soon)</div>} />
+                <Route path="settings/weighbridge" element={<div>Weighbridge Settings (Coming Soon)</div>} />
+                <Route path="settings/users" element={<div>User Management (Coming Soon)</div>} />
+                <Route path="settings/profile" element={<SettingsProfile />} />
+              </Route>
+              <Route path="*" element={<NotFound />} />
+            </Routes>
+          </NotificationProvider>
+        </AuthProvider>
       </BrowserRouter>
     </TooltipProvider>
   </QueryClientProvider>
