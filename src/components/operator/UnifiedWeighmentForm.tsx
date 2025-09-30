@@ -52,6 +52,7 @@ export default function UnifiedWeighmentForm({
   const [selectedTicket, setSelectedTicket] = useState('');
   const [serialNo, setSerialNo] = useState('');
   const [currentDateTime, setCurrentDateTime] = useState(new Date());
+  const [charges, setCharges] = useState('');
   const {
     success
   } = useNotification();
@@ -98,7 +99,8 @@ export default function UnifiedWeighmentForm({
       weight: liveWeight,
       weightType,
       timestamp: currentDateTime.toISOString(),
-      selectedTicket
+      selectedTicket,
+      charges: charges ? parseFloat(charges) : 0
     };
 
     // Get existing bills and add the new one
@@ -147,6 +149,7 @@ export default function UnifiedWeighmentForm({
     setPartyName('');
     setProductName('');
     setSelectedTicket('');
+    setCharges('');
     setSerialNo(nextSerialNo);
   };
   const handleCloseTicket = (ticketId: string) => {
@@ -469,6 +472,30 @@ export default function UnifiedWeighmentForm({
                   <Badge variant={isStable ? 'default' : 'secondary'}>
                     {isStable ? 'Ready' : 'Waiting'}
                   </Badge>
+                </div>
+              </div>}
+
+            {/* Charges Field - Special Styling */}
+            {operationType !== 'use-existing' && <div className="space-y-2">
+                <Label htmlFor="charges" className="text-base font-semibold">Charges</Label>
+                <div className="relative">
+                  <div className="absolute inset-0 bg-gradient-to-r from-primary/20 via-primary/10 to-primary/20 rounded-lg blur-sm"></div>
+                  <div className="relative bg-card border-2 border-primary/30 rounded-lg p-4 shadow-lg">
+                    <div className="flex items-center gap-3">
+                      <span className="text-3xl font-bold text-primary">₹</span>
+                      <Input
+                        id="charges"
+                        type="number"
+                        step="0.01"
+                        min="0"
+                        value={charges}
+                        onChange={(e) => setCharges(e.target.value)}
+                        placeholder="Enter charges"
+                        className="text-xl font-semibold border-0 focus-visible:ring-0 focus-visible:ring-offset-0 bg-transparent"
+                      />
+                      <span className="text-sm text-muted-foreground whitespace-nowrap">INR</span>
+                    </div>
+                  </div>
                 </div>
               </div>}
 
