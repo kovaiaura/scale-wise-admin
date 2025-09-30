@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Label } from '@/components/ui/label';
+import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useNotification } from '@/contexts/NotificationContext';
 import { mockVehicles, mockParties, mockProducts } from '@/utils/mockData';
@@ -300,34 +301,37 @@ export default function UnifiedWeighmentForm({ liveWeight, isStable }: UnifiedWe
 
                 <div className="space-y-2">
                   <Label htmlFor="vehicle">Vehicle Number</Label>
-                  <Select value={vehicleNo} onValueChange={setVehicleNo}>
-                    <SelectTrigger id="vehicle">
-                      <SelectValue placeholder="Select vehicle" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {mockVehicles.map((vehicle) => (
-                        <SelectItem key={vehicle.id} value={vehicle.vehicleNo}>
-                          {vehicle.vehicleNo}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <Input
+                    id="vehicle"
+                    type="text"
+                    value={vehicleNo}
+                    onChange={(e) => setVehicleNo(e.target.value)}
+                    placeholder="Type or select vehicle number"
+                    list="vehicle-list"
+                    className="uppercase"
+                  />
+                  <datalist id="vehicle-list">
+                    {mockVehicles.map((vehicle) => (
+                      <option key={vehicle.id} value={vehicle.vehicleNo} />
+                    ))}
+                  </datalist>
                 </div>
 
                 <div className="space-y-2">
                   <Label htmlFor="party">Party Name</Label>
-                  <Select value={partyName} onValueChange={setPartyName}>
-                    <SelectTrigger id="party">
-                      <SelectValue placeholder="Select party" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {mockParties.map((party) => (
-                        <SelectItem key={party.id} value={party.partyName}>
-                          {party.partyName}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <Input
+                    id="party"
+                    type="text"
+                    value={partyName}
+                    onChange={(e) => setPartyName(e.target.value)}
+                    placeholder="Type or select party name"
+                    list="party-list"
+                  />
+                  <datalist id="party-list">
+                    {mockParties.map((party) => (
+                      <option key={party.id} value={party.partyName} />
+                    ))}
+                  </datalist>
                 </div>
 
                 <div className="space-y-2">
@@ -473,19 +477,25 @@ export default function UnifiedWeighmentForm({ liveWeight, isStable }: UnifiedWe
               <>
                 <div className="space-y-2">
                   <Label htmlFor="shuttle-vehicle">Vehicle Number</Label>
-                  <Select value={vehicleNo} onValueChange={setVehicleNo}>
-                    <SelectTrigger id="shuttle-vehicle">
-                      <SelectValue placeholder="Select vehicle" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {mockVehicles.map((vehicle) => (
-                        <SelectItem key={vehicle.id} value={vehicle.vehicleNo}>
-                          {vehicle.vehicleNo}
-                          {mockStoredTares[vehicle.vehicleNo] && ` (Stored Tare: ${mockStoredTares[vehicle.vehicleNo]} kg)`}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <Input
+                    id="shuttle-vehicle"
+                    type="text"
+                    value={vehicleNo}
+                    onChange={(e) => setVehicleNo(e.target.value)}
+                    placeholder="Type or select vehicle number"
+                    list="shuttle-vehicle-list"
+                    className="uppercase"
+                  />
+                  <datalist id="shuttle-vehicle-list">
+                    {mockVehicles.map((vehicle) => (
+                      <option 
+                        key={vehicle.id} 
+                        value={vehicle.vehicleNo}
+                      >
+                        {mockStoredTares[vehicle.vehicleNo] ? `Stored Tare: ${mockStoredTares[vehicle.vehicleNo]} kg` : ''}
+                      </option>
+                    ))}
+                  </datalist>
                 </div>
 
                 {storedTare && (
@@ -505,18 +515,19 @@ export default function UnifiedWeighmentForm({ liveWeight, isStable }: UnifiedWe
 
                 <div className="space-y-2">
                   <Label htmlFor="shuttle-party">Party Name</Label>
-                  <Select value={partyName} onValueChange={setPartyName}>
-                    <SelectTrigger id="shuttle-party">
-                      <SelectValue placeholder="Select party" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {mockParties.map((party) => (
-                        <SelectItem key={party.id} value={party.partyName}>
-                          {party.partyName}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <Input
+                    id="shuttle-party"
+                    type="text"
+                    value={partyName}
+                    onChange={(e) => setPartyName(e.target.value)}
+                    placeholder="Type or select party name"
+                    list="shuttle-party-list"
+                  />
+                  <datalist id="shuttle-party-list">
+                    {mockParties.map((party) => (
+                      <option key={party.id} value={party.partyName} />
+                    ))}
+                  </datalist>
                 </div>
 
                 <div className="space-y-2">
