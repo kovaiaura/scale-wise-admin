@@ -36,7 +36,17 @@ export default function UnifiedWeighmentForm({ liveWeight, isStable }: UnifiedWe
   const [productName, setProductName] = useState('');
   const [weightType, setWeightType] = useState<'gross' | 'tare' | 'one-time'>('gross');
   const [selectedTicket, setSelectedTicket] = useState('');
+  const [serialNo, setSerialNo] = useState('');
+  const [currentDateTime, setCurrentDateTime] = useState(new Date());
   const { success } = useNotification();
+
+  // Update date/time every second
+  useState(() => {
+    const timer = setInterval(() => {
+      setCurrentDateTime(new Date());
+    }, 1000);
+    return () => clearInterval(timer);
+  });
 
   const handleCapture = () => {
     if (operationType === 'new') {
@@ -74,6 +84,7 @@ export default function UnifiedWeighmentForm({ liveWeight, isStable }: UnifiedWe
     setPartyName('');
     setProductName('');
     setSelectedTicket('');
+    setSerialNo('');
   };
 
   const handleCloseTicket = (ticketId: string) => {
@@ -144,6 +155,42 @@ export default function UnifiedWeighmentForm({ liveWeight, isStable }: UnifiedWe
             <CardTitle>Capture Weighment</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
+            {/* Date, Time, Serial Number - Always Visible */}
+            <div className="grid grid-cols-3 gap-4 p-4 bg-muted/50 rounded-lg border">
+              <div className="space-y-1">
+                <Label className="text-xs text-muted-foreground">Date</Label>
+                <div className="font-mono font-semibold">
+                  {currentDateTime.toLocaleDateString('en-IN', { 
+                    day: '2-digit', 
+                    month: '2-digit', 
+                    year: 'numeric' 
+                  })}
+                </div>
+              </div>
+              <div className="space-y-1">
+                <Label className="text-xs text-muted-foreground">Time</Label>
+                <div className="font-mono font-semibold">
+                  {currentDateTime.toLocaleTimeString('en-IN', { 
+                    hour: '2-digit', 
+                    minute: '2-digit', 
+                    second: '2-digit',
+                    hour12: true
+                  })}
+                </div>
+              </div>
+              <div className="space-y-1">
+                <Label htmlFor="serial-no" className="text-xs text-muted-foreground">Serial No. *</Label>
+                <input
+                  id="serial-no"
+                  type="text"
+                  value={serialNo}
+                  onChange={(e) => setSerialNo(e.target.value)}
+                  placeholder="Enter serial no."
+                  className="w-full px-3 py-1.5 text-sm font-mono font-semibold bg-background border rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
+                />
+              </div>
+            </div>
+
             {/* Operation Type Selector */}
             <div className="space-y-3">
               <Label>Operation Type</Label>
@@ -255,17 +302,23 @@ export default function UnifiedWeighmentForm({ liveWeight, isStable }: UnifiedWe
             {operationType === 'update' && (
               <>
                 <div className="space-y-2">
-                  <Label htmlFor="open-ticket">Select Open Ticket</Label>
-                  <Select value={selectedTicket} onValueChange={setSelectedTicket}>
+                  <Label htmlFor="open-ticket">Select Open Ticket (by Serial No.)</Label>
+                  <Select 
+                    value={selectedTicket} 
+                    onValueChange={setSelectedTicket}
+                    disabled={!serialNo}
+                  >
                     <SelectTrigger id="open-ticket">
-                      <SelectValue placeholder="Select ticket to update" />
+                      <SelectValue placeholder={serialNo ? "Select ticket to update" : "Enter serial no. first"} />
                     </SelectTrigger>
                     <SelectContent>
-                      {mockOpenTickets.map((ticket) => (
-                        <SelectItem key={ticket.id} value={ticket.id}>
-                          {ticket.ticketNo} - {ticket.vehicleNo} - {ticket.partyName} - Gross: {ticket.grossWeight} kg
-                        </SelectItem>
-                      ))}
+                      {mockOpenTickets
+                        .filter(ticket => serialNo ? ticket.ticketNo.includes(serialNo) : true)
+                        .map((ticket) => (
+                          <SelectItem key={ticket.id} value={ticket.id}>
+                            {ticket.ticketNo} - {ticket.vehicleNo} - {ticket.partyName} - Gross: {ticket.grossWeight} kg
+                          </SelectItem>
+                        ))}
                     </SelectContent>
                   </Select>
                 </div>
@@ -300,17 +353,23 @@ export default function UnifiedWeighmentForm({ liveWeight, isStable }: UnifiedWe
             {operationType === 'use-existing' && (
               <>
                 <div className="space-y-2">
-                  <Label htmlFor="existing-ticket">Select Open Ticket</Label>
-                  <Select value={selectedTicket} onValueChange={setSelectedTicket}>
+                  <Label htmlFor="existing-ticket">Select Open Ticket (by Serial No.)</Label>
+                  <Select 
+                    value={selectedTicket} 
+                    onValueChange={setSelectedTicket}
+                    disabled={!serialNo}
+                  >
                     <SelectTrigger id="existing-ticket">
-                      <SelectValue placeholder="Select ticket to close/cancel" />
+                      <SelectValue placeholder={serialNo ? "Select ticket to close/cancel" : "Enter serial no. first"} />
                     </SelectTrigger>
                     <SelectContent>
-                      {mockOpenTickets.map((ticket) => (
-                        <SelectItem key={ticket.id} value={ticket.id}>
-                          {ticket.ticketNo} - {ticket.vehicleNo} - {ticket.partyName}
-                        </SelectItem>
-                      ))}
+                      {mockOpenTickets
+                        .filter(ticket => serialNo ? ticket.ticketNo.includes(serialNo) : true)
+                        .map((ticket) => (
+                          <SelectItem key={ticket.id} value={ticket.id}>
+                            {ticket.ticketNo} - {ticket.vehicleNo} - {ticket.partyName}
+                          </SelectItem>
+                        ))}
                     </SelectContent>
                   </Select>
                 </div>
@@ -467,6 +526,7 @@ export default function UnifiedWeighmentForm({ liveWeight, isStable }: UnifiedWe
                 onClick={handleCapture}
                 disabled={
                   !isStable ||
+                  !serialNo ||
                   (operationType === 'new' && (!vehicleNo || !partyName || !productName)) ||
                   (operationType === 'update' && !selectedTicket) ||
                   (operationType === 'stored-tare' && (!vehicleNo || !partyName || !productName))
