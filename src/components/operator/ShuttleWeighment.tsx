@@ -46,8 +46,8 @@ export default function ShuttleWeighment({ liveWeight, isStable }: ShuttleWeighm
   };
 
   return (
-    <div className="grid gap-6 lg:grid-cols-3">
-      <div className="lg:col-span-2 space-y-6">
+    <div className="flex flex-col lg:flex-row gap-6">
+      <div className="w-full lg:w-[30%] space-y-6">
         <Card className="card-shadow">
           <CardHeader>
             <CardTitle className="flex items-center justify-between">
@@ -93,38 +93,9 @@ export default function ShuttleWeighment({ liveWeight, isStable }: ShuttleWeighm
           </CardContent>
         </Card>
 
-        <Card className="card-shadow">
-          <CardHeader>
-            <CardTitle>Shuttle Trip History</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Trip</TableHead>
-                  <TableHead>Gross (kg)</TableHead>
-                  <TableHead>Net (kg)</TableHead>
-                  <TableHead>Time</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {mockShuttleTrips.map((trip) => (
-                  <TableRow key={trip.id}>
-                    <TableCell>Trip #{trip.tripNo}</TableCell>
-                    <TableCell>{trip.grossWeight.toLocaleString()}</TableCell>
-                    <TableCell className="font-bold text-primary">
-                      {trip.netWeight.toLocaleString()}
-                    </TableCell>
-                    <TableCell>{trip.time}</TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </CardContent>
-        </Card>
       </div>
 
-      <div className="space-y-6">
+      <div className="w-full lg:w-[70%] space-y-6">
         <Card className="card-shadow">
           <CardHeader>
             <CardTitle>Shuttle Setup</CardTitle>
@@ -212,6 +183,36 @@ export default function ShuttleWeighment({ liveWeight, isStable }: ShuttleWeighm
                 </Button>
               </>
             )}
+          </CardContent>
+        </Card>
+
+        <Card className="card-shadow">
+          <CardHeader>
+            <CardTitle>Shuttle Trip History</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Trip</TableHead>
+                  <TableHead>Gross (kg)</TableHead>
+                  <TableHead>Net (kg)</TableHead>
+                  <TableHead>Time</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {mockShuttleTrips.map((trip) => (
+                  <TableRow key={trip.id}>
+                    <TableCell>Trip #{trip.tripNo}</TableCell>
+                    <TableCell>{trip.grossWeight.toLocaleString()}</TableCell>
+                    <TableCell className="font-bold text-primary">
+                      {trip.netWeight.toLocaleString()}
+                    </TableCell>
+                    <TableCell>{trip.time}</TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
           </CardContent>
         </Card>
       </div>

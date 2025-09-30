@@ -32,8 +32,8 @@ export default function QuickWeighment({ liveWeight, isStable }: QuickWeighmentP
   };
 
   return (
-    <div className="grid gap-6 lg:grid-cols-3">
-      <div className="lg:col-span-2">
+    <div className="flex flex-col lg:flex-row gap-6">
+      <div className="w-full lg:w-[30%]">
         <Card className="card-shadow">
           <CardHeader>
             <CardTitle className="flex items-center justify-between">
@@ -77,7 +77,7 @@ export default function QuickWeighment({ liveWeight, isStable }: QuickWeighmentP
         </Card>
       </div>
 
-      <div>
+      <div className="w-full lg:w-[70%]">
         <Card className="card-shadow">
           <CardHeader>
             <CardTitle>Customer Details</CardTitle>

@@ -40,8 +40,8 @@ export default function RegularWeighment({ liveWeight, isStable }: RegularWeighm
   };
 
   return (
-    <div className="grid gap-6 lg:grid-cols-3">
-      <div className="lg:col-span-2 space-y-6">
+    <div className="flex flex-col lg:flex-row gap-6">
+      <div className="w-full lg:w-[30%] space-y-6">
         <Card className="card-shadow">
           <CardHeader>
             <CardTitle className="flex items-center justify-between">
@@ -88,10 +88,9 @@ export default function RegularWeighment({ liveWeight, isStable }: RegularWeighm
           </CardContent>
         </Card>
 
-        <OpenTicketsTable />
       </div>
 
-      <div>
+      <div className="w-full lg:w-[70%] space-y-6">
         <Card className="card-shadow">
           <CardHeader>
             <CardTitle>Capture Weighment</CardTitle>
@@ -181,6 +180,8 @@ export default function RegularWeighment({ liveWeight, isStable }: RegularWeighm
             </Button>
           </CardContent>
         </Card>
+
+        <OpenTicketsTable />
       </div>
     </div>
   );
