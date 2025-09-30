@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Activity, Check, Camera } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -40,51 +40,106 @@ export default function UnifiedWeighmentForm({ liveWeight, isStable }: UnifiedWe
   const [currentDateTime, setCurrentDateTime] = useState(new Date());
   const { success } = useNotification();
 
-  // Update date/time every second
-  useState(() => {
+  // Initialize serial number from localStorage and update date/time
+  useEffect(() => {
+    // Get the last serial number from localStorage
+    const lastSerialNo = localStorage.getItem('lastSerialNo');
+    let nextSerialNo: string;
+    
+    if (lastSerialNo) {
+      // Parse the serial number (format: WB-2025-001)
+      const parts = lastSerialNo.split('-');
+      const year = new Date().getFullYear().toString();
+      const lastYear = parts[1];
+      
+      if (lastYear === year) {
+        // Same year, increment the number
+        const lastNumber = parseInt(parts[2]);
+        nextSerialNo = `WB-${year}-${String(lastNumber + 1).padStart(3, '0')}`;
+      } else {
+        // New year, reset to 001
+        nextSerialNo = `WB-${year}-001`;
+      }
+    } else {
+      // First time, start with 001
+      const year = new Date().getFullYear().toString();
+      nextSerialNo = `WB-${year}-001`;
+    }
+    
+    setSerialNo(nextSerialNo);
+    
+    // Update date/time every second
     const timer = setInterval(() => {
       setCurrentDateTime(new Date());
     }, 1000);
+    
     return () => clearInterval(timer);
-  });
+  }, []);
 
   const handleCapture = () => {
+    // Save bill data to localStorage
+    const billData = {
+      serialNo,
+      operationType,
+      vehicleNo,
+      partyName,
+      productName,
+      weight: liveWeight,
+      weightType,
+      timestamp: currentDateTime.toISOString(),
+      selectedTicket,
+    };
+    
+    // Get existing bills and add the new one
+    const existingBills = JSON.parse(localStorage.getItem('weighmentBills') || '[]');
+    existingBills.push(billData);
+    localStorage.setItem('weighmentBills', JSON.stringify(existingBills));
+    
+    // Update the last serial number
+    localStorage.setItem('lastSerialNo', serialNo);
+    
     if (operationType === 'new') {
       if (!vehicleNo || !partyName || !productName) return;
       
       if (weightType === 'gross') {
-        success(`Gross weight ${liveWeight} kg captured! Ticket created (OPEN).`);
+        success(`Gross weight ${liveWeight} kg captured! Ticket ${serialNo} created (OPEN).`);
       } else if (weightType === 'one-time') {
-        success(`One-time weighment ${liveWeight} kg captured! Bill ready to print (CLOSED).`);
+        success(`One-time weighment ${liveWeight} kg captured! Bill ${serialNo} ready to print (CLOSED).`);
       }
     } else if (operationType === 'update') {
       if (!selectedTicket) return;
       const ticket = mockOpenTickets.find(t => t.id === selectedTicket);
       if (ticket) {
         const netWeight = ticket.grossWeight - liveWeight;
-        success(`Tare weight ${liveWeight} kg captured! Net: ${netWeight} kg. Ticket closed, bill ready to print.`);
+        success(`Tare weight ${liveWeight} kg captured! Net: ${netWeight} kg. Ticket ${serialNo} closed, bill ready to print.`);
       }
     } else if (operationType === 'use-existing') {
       if (!selectedTicket) return;
-      success(`Ticket closed successfully. Bill ready to print.`);
+      success(`Ticket closed successfully. Bill ${serialNo} ready to print.`);
     } else if (operationType === 'stored-tare') {
       if (!vehicleNo || !partyName || !productName) return;
       
       const storedTare = mockStoredTares[vehicleNo];
       if (storedTare) {
         const netWeight = liveWeight - storedTare;
-        success(`Gross weight ${liveWeight} kg captured! Net: ${netWeight} kg (using stored tare: ${storedTare} kg). Trip logged.`);
+        success(`Gross weight ${liveWeight} kg captured! Net: ${netWeight} kg (using stored tare: ${storedTare} kg). Trip ${serialNo} logged.`);
       } else {
-        success(`Base Tare ${liveWeight} kg captured and stored for vehicle ${vehicleNo}.`);
+        success(`Base Tare ${liveWeight} kg captured and stored for vehicle ${vehicleNo}. ${serialNo}`);
       }
     }
+    
+    // Generate next serial number
+    const parts = serialNo.split('-');
+    const year = new Date().getFullYear().toString();
+    const currentNumber = parseInt(parts[2]);
+    const nextSerialNo = `WB-${year}-${String(currentNumber + 1).padStart(3, '0')}`;
     
     // Reset form
     setVehicleNo('');
     setPartyName('');
     setProductName('');
     setSelectedTicket('');
-    setSerialNo('');
+    setSerialNo(nextSerialNo);
   };
 
   const handleCloseTicket = (ticketId: string) => {
@@ -180,14 +235,9 @@ export default function UnifiedWeighmentForm({ liveWeight, isStable }: UnifiedWe
               </div>
               <div className="space-y-1">
                 <Label htmlFor="serial-no" className="text-xs text-muted-foreground">Serial No. *</Label>
-                <input
-                  id="serial-no"
-                  type="text"
-                  value={serialNo}
-                  onChange={(e) => setSerialNo(e.target.value)}
-                  placeholder="Enter serial no."
-                  className="w-full px-3 py-1.5 text-sm font-mono font-semibold bg-background border rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
-                />
+                <div className="w-full px-3 py-1.5 text-sm font-mono font-semibold bg-muted/50 border rounded-md">
+                  {serialNo || 'Generating...'}
+                </div>
               </div>
             </div>
 
