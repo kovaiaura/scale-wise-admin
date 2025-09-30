@@ -55,12 +55,12 @@ export default function QuickWeighment({ liveWeight, isStable }: QuickWeighmentP
                 isStable ? 'bg-success/10' : 'bg-warning/10'
               }`}
             >
-              <div className={`led-display text-8xl font-bold ${
+              <div className={`led-display text-4xl md:text-5xl font-bold ${
                 isStable ? 'text-success' : 'text-warning'
               }`}>
                 {liveWeight.toLocaleString()}
               </div>
-              <div className="text-3xl font-medium text-muted-foreground mt-4">KG</div>
+              <div className="text-xl font-medium text-muted-foreground mt-4">KG</div>
             </motion.div>
 
             <div className="mt-6 p-6 bg-primary/5 rounded-lg border border-primary/20">

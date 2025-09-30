@@ -60,12 +60,12 @@ export default function RegularWeighment({ liveWeight, isStable }: RegularWeighm
                 isStable ? 'bg-success/10' : 'bg-warning/10'
               }`}
             >
-              <div className={`led-display text-7xl font-bold ${
+              <div className={`led-display text-4xl md:text-5xl font-bold ${
                 isStable ? 'text-success' : 'text-warning'
               }`}>
                 {liveWeight.toLocaleString()}
               </div>
-              <div className="text-2xl font-medium text-muted-foreground mt-2">KG</div>
+              <div className="text-xl font-medium text-muted-foreground mt-2">KG</div>
             </motion.div>
           </CardContent>
         </Card>
