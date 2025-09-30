@@ -14,6 +14,7 @@ import Reports from "./pages/Reports";
 import MastersVehicles from "./pages/MastersVehicles";
 import MastersParties from "./pages/MastersParties";
 import MastersProducts from "./pages/MastersProducts";
+import SettingsWeighbridge from "./pages/SettingsWeighbridge";
 import SettingsProfile from "./pages/SettingsProfile";
 import NotFound from "./pages/NotFound";
 
@@ -38,7 +39,7 @@ const App = () => (
                 <Route path="masters/vehicles" element={<MastersVehicles />} />
                 <Route path="masters/parties" element={<MastersParties />} />
                 <Route path="masters/products" element={<MastersProducts />} />
-                <Route path="settings/weighbridge" element={<div>Weighbridge Settings (Coming Soon)</div>} />
+                <Route path="settings/weighbridge" element={<SettingsWeighbridge />} />
                 <Route path="settings/users" element={<div>User Management (Coming Soon)</div>} />
                 <Route path="settings/profile" element={<SettingsProfile />} />
               </Route>

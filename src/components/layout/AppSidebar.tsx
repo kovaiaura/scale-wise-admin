@@ -42,6 +42,11 @@ const settingsNavItems = [
   { title: 'Profile', url: '/settings/profile', icon: Settings },
 ];
 
+const operatorSettingsNavItems = [
+  { title: 'Weighbridge', url: '/settings/weighbridge', icon: Weight },
+  { title: 'Profile', url: '/settings/profile', icon: Settings },
+];
+
 export const AppSidebar = () => {
   const { state } = useSidebar();
   const location = useLocation();
@@ -111,6 +116,26 @@ export const AppSidebar = () => {
             <SidebarGroupContent>
               <SidebarMenu>
                 {settingsNavItems.map((item) => (
+                  <SidebarMenuItem key={item.title}>
+                    <SidebarMenuButton asChild isActive={isActive(item.url)}>
+                      <NavLink to={item.url}>
+                        <item.icon className="h-4 w-4" />
+                        {!collapsed && <span>{item.title}</span>}
+                      </NavLink>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                ))}
+              </SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
+        )}
+
+        {user?.role === 'operator' && (
+          <SidebarGroup>
+            <SidebarGroupLabel>Settings</SidebarGroupLabel>
+            <SidebarGroupContent>
+              <SidebarMenu>
+                {operatorSettingsNavItems.map((item) => (
                   <SidebarMenuItem key={item.title}>
                     <SidebarMenuButton asChild isActive={isActive(item.url)}>
                       <NavLink to={item.url}>
