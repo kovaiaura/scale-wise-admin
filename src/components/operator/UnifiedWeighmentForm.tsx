@@ -441,8 +441,8 @@ export default function UnifiedWeighmentForm({
           }} transition={{
             duration: 0.5,
             repeat: isStable ? 0 : Infinity
-          }} className="flex flex-col items-center justify-center p-8 md:p-12 rounded-2xl min-h-[200px] bg-muted">
-              <div className="led-display text-3xl md:text-4xl lg:text-5xl font-bold text-sidebar whitespace-nowrap">
+          }} className="flex flex-col items-center justify-center p-8 md:p-12 min-h-[200px]">
+              <div className="text-3xl md:text-4xl lg:text-5xl font-bold whitespace-nowrap">
                 {liveWeight.toLocaleString()}
               </div>
               <div className="text-xl md:text-2xl font-medium text-muted-foreground mt-3">KG</div>
