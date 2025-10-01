@@ -1,13 +1,17 @@
 import { useState, useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
-import { Camera, X, Printer, Check } from 'lucide-react';
+import { Camera, X, Printer } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
+import { Check, ChevronsUpDown } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { cn } from '@/lib/utils';
 import { mockVehicles, mockParties, mockProducts } from '@/utils/mockData';
 import OpenTicketsTable from './OpenTicketsTable';
 import BillPrintView from './BillPrintView';
@@ -39,7 +43,7 @@ export default function UnifiedWeighmentForm({
   const [vehicleStatus, setVehicleStatus] = useState<'load' | 'empty'>('load');
   const [weightType, setWeightType] = useState<'gross' | 'tare' | 'one-time'>('gross');
   const [selectedTicket, setSelectedTicket] = useState('');
-  const [searchQuery, setSearchQuery] = useState('');
+  const [ticketSearchOpen, setTicketSearchOpen] = useState(false);
   const [serialNo, setSerialNo] = useState('');
   const [currentDateTime, setCurrentDateTime] = useState(new Date());
   const [charges, setCharges] = useState('');
@@ -388,13 +392,13 @@ export default function UnifiedWeighmentForm({
     setProductName('');
     setVehicleStatus('load');
     setSelectedTicket('');
-    setSearchQuery('');
     setCharges('');
     setCapturedImage(null);
   };
   // Update form fields when ticket is selected
   const handleTicketSelect = (ticketId: string) => {
     setSelectedTicket(ticketId);
+    setTicketSearchOpen(false);
     const ticket = getOpenTicketById(ticketId);
     if (ticket) {
       setVehicleNo(ticket.vehicleNo);
@@ -405,22 +409,6 @@ export default function UnifiedWeighmentForm({
   };
 
   const storedTare = vehicleNo ? getStoredTareByVehicle(vehicleNo) : null;
-
-  // Filter tickets based on search query
-  const filteredTickets = openTickets.filter(ticket => {
-    if (!searchQuery) return true;
-    const query = searchQuery.toLowerCase().trim();
-    return (
-      ticket.ticketNo.toLowerCase().includes(query) ||
-      ticket.vehicleNo.toLowerCase().includes(query) ||
-      ticket.partyName.toLowerCase().includes(query)
-    );
-  });
-
-  // Debug logs
-  console.log('Search Query:', searchQuery);
-  console.log('Open Tickets:', openTickets);
-  console.log('Filtered Tickets:', filteredTickets);
 
   const handlePrintComplete = (bill: Bill) => {
     updateBillStatus(bill.id, 'PRINTED');
@@ -650,44 +638,68 @@ export default function UnifiedWeighmentForm({
             {/* UPDATE Operation */}
             {operationType === 'update' && <>
                 <div className="space-y-2">
-                  <Label htmlFor="search-ticket">Search Ticket (Serial No./Vehicle/Party)</Label>
-                  <Input 
-                    id="search-ticket" 
-                    type="text" 
-                    value={searchQuery} 
-                    onChange={e => setSearchQuery(e.target.value)} 
-                    placeholder="Type to search tickets..." 
-                    className="font-mono"
-                  />
+                  <Label>Select Open Ticket</Label>
+                  <Popover open={ticketSearchOpen} onOpenChange={setTicketSearchOpen}>
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant="outline"
+                        role="combobox"
+                        aria-expanded={ticketSearchOpen}
+                        className="w-full justify-between font-mono"
+                      >
+                        {selectedTicket
+                          ? (() => {
+                              const ticket = openTickets.find((t) => t.id === selectedTicket);
+                              return ticket ? `${ticket.ticketNo} - ${ticket.vehicleNo} - ${ticket.partyName}` : "Select ticket...";
+                            })()
+                          : openTickets.length === 0
+                          ? "No open tickets available"
+                          : "Search and select ticket..."}
+                        <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-full p-0" align="start">
+                      <Command>
+                        <CommandInput 
+                          placeholder="Search by Serial No./Vehicle/Party..." 
+                          className="h-9"
+                        />
+                        <CommandList>
+                          <CommandEmpty>
+                            {openTickets.length === 0 ? "No open tickets available" : "No tickets found"}
+                          </CommandEmpty>
+                          <CommandGroup>
+                            {openTickets.map((ticket) => (
+                              <CommandItem
+                                key={ticket.id}
+                                value={`${ticket.ticketNo} ${ticket.vehicleNo} ${ticket.partyName}`}
+                                onSelect={() => handleTicketSelect(ticket.id)}
+                                className="font-mono"
+                              >
+                                <Check
+                                  className={cn(
+                                    "mr-2 h-4 w-4",
+                                    selectedTicket === ticket.id ? "opacity-100" : "opacity-0"
+                                  )}
+                                />
+                                <div className="flex flex-col">
+                                  <span className="font-semibold">{ticket.ticketNo}</span>
+                                  <span className="text-xs text-muted-foreground">
+                                    {ticket.vehicleNo} - {ticket.partyName}
+                                  </span>
+                                </div>
+                              </CommandItem>
+                            ))}
+                          </CommandGroup>
+                        </CommandList>
+                      </Command>
+                    </PopoverContent>
+                  </Popover>
                   {openTickets.length > 0 && (
                     <p className="text-xs text-muted-foreground">
-                      Showing {filteredTickets.length} of {openTickets.length} tickets
+                      {openTickets.length} open ticket{openTickets.length !== 1 ? 's' : ''} available
                     </p>
                   )}
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="open-ticket">Select Open Ticket</Label>
-                  <Select value={selectedTicket} onValueChange={handleTicketSelect}>
-                    <SelectTrigger id="open-ticket">
-                      <SelectValue placeholder={
-                        filteredTickets.length === 0 
-                          ? (openTickets.length === 0 ? "No open tickets available" : "No tickets match search")
-                          : "Select ticket to update"
-                      } />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {filteredTickets.length === 0 ? (
-                        <div className="p-2 text-sm text-muted-foreground text-center">
-                          {openTickets.length === 0 ? "No open tickets" : "No tickets match your search"}
-                        </div>
-                      ) : (
-                        filteredTickets.map(ticket => <SelectItem key={ticket.id} value={ticket.id}>
-                            {ticket.ticketNo} - {ticket.vehicleNo} - {ticket.partyName}
-                          </SelectItem>)
-                      )}
-                    </SelectContent>
-                  </Select>
                 </div>
 
                 {selectedTicket && <div className="space-y-3">
