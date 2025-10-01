@@ -11,6 +11,8 @@ import { useToast } from '@/hooks/use-toast';
 export default function MastersVehicles() {
   const [searchTerm, setSearchTerm] = useState('');
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [selectedVehicle, setSelectedVehicle] = useState<any>(null);
   const [vehicles, setVehicles] = useState(mockVehicles);
   const [formData, setFormData] = useState({
     vehicleNo: '',
@@ -65,6 +67,46 @@ export default function MastersVehicles() {
     });
   };
 
+  const handleRowClick = (vehicle: any) => {
+    setSelectedVehicle(vehicle);
+    setIsEditDialogOpen(true);
+  };
+
+  const handleEditChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    setSelectedVehicle((prev: any) => ({ ...prev, [name]: value }));
+  };
+
+  const handleUpdate = () => {
+    if (!selectedVehicle.vehicleNo || !selectedVehicle.vehicleType || !selectedVehicle.ownerName || !selectedVehicle.contactNo) {
+      toast({
+        title: "Error",
+        description: "Please fill in all fields",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    setVehicles(vehicles.map(v => 
+      v.id === selectedVehicle.id ? { ...selectedVehicle, vehicleNo: selectedVehicle.vehicleNo.toUpperCase() } : v
+    ));
+    setIsEditDialogOpen(false);
+    
+    toast({
+      title: "Success",
+      description: "Vehicle updated successfully"
+    });
+  };
+
+  const handleDelete = (vehicleId: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setVehicles(vehicles.filter(v => v.id !== vehicleId));
+    toast({
+      title: "Success",
+      description: "Vehicle deleted successfully"
+    });
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -105,7 +147,11 @@ export default function MastersVehicles() {
               </thead>
               <tbody>
                 {filteredVehicles.map((vehicle) => (
-                  <tr key={vehicle.id} className="border-b hover:bg-muted/50 transition-colors">
+                  <tr 
+                    key={vehicle.id} 
+                    className="border-b hover:bg-muted/50 transition-colors cursor-pointer"
+                    onClick={() => handleRowClick(vehicle)}
+                  >
                     <td className="p-3 text-sm font-mono font-medium">{vehicle.vehicleNo}</td>
                     <td className="p-3 text-sm">{vehicle.vehicleType}</td>
                     <td className="p-3 text-sm">{vehicle.capacity} kg</td>
@@ -113,10 +159,22 @@ export default function MastersVehicles() {
                     <td className="p-3 text-sm font-mono">{vehicle.contactNo}</td>
                     <td className="p-3 text-right">
                       <div className="flex items-center justify-end gap-2">
-                        <Button variant="ghost" size="icon">
+                        <Button 
+                          variant="ghost" 
+                          size="icon"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleRowClick(vehicle);
+                          }}
+                        >
                           <Edit className="h-4 w-4" />
                         </Button>
-                        <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive">
+                        <Button 
+                          variant="ghost" 
+                          size="icon" 
+                          className="text-destructive hover:text-destructive"
+                          onClick={(e) => handleDelete(vehicle.id, e)}
+                        >
                           <Trash2 className="h-4 w-4" />
                         </Button>
                       </div>
@@ -182,6 +240,65 @@ export default function MastersVehicles() {
               Cancel
             </Button>
             <Button onClick={handleSave}>Save Vehicle</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+        <DialogContent className="sm:max-w-[500px]">
+          <DialogHeader>
+            <DialogTitle>Vehicle Details</DialogTitle>
+          </DialogHeader>
+          {selectedVehicle && (
+            <div className="grid gap-4 py-4">
+              <div className="grid gap-2">
+                <Label htmlFor="edit-vehicleNo">Vehicle Number *</Label>
+                <Input
+                  id="edit-vehicleNo"
+                  name="vehicleNo"
+                  placeholder="e.g., GJ01AB1234"
+                  value={selectedVehicle.vehicleNo}
+                  onChange={handleEditChange}
+                />
+              </div>
+              <div className="grid gap-2">
+                <Label htmlFor="edit-vehicleType">Vehicle Type *</Label>
+                <Input
+                  id="edit-vehicleType"
+                  name="vehicleType"
+                  placeholder="e.g., Truck, Trailer"
+                  value={selectedVehicle.vehicleType}
+                  onChange={handleEditChange}
+                />
+              </div>
+              <div className="grid gap-2">
+                <Label htmlFor="edit-ownerName">Owner Name *</Label>
+                <Input
+                  id="edit-ownerName"
+                  name="ownerName"
+                  placeholder="e.g., John Doe"
+                  value={selectedVehicle.ownerName}
+                  onChange={handleEditChange}
+                />
+              </div>
+              <div className="grid gap-2">
+                <Label htmlFor="edit-contactNo">Contact Number *</Label>
+                <Input
+                  id="edit-contactNo"
+                  name="contactNo"
+                  type="tel"
+                  placeholder="e.g., +91 9876543210"
+                  value={selectedVehicle.contactNo}
+                  onChange={handleEditChange}
+                />
+              </div>
+            </div>
+          )}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsEditDialogOpen(false)}>
+              Cancel
+            </Button>
+            <Button onClick={handleUpdate}>Update Vehicle</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
