@@ -48,6 +48,7 @@ export default function UnifiedWeighmentForm({
   const [vehicleNo, setVehicleNo] = useState('');
   const [partyName, setPartyName] = useState('');
   const [productName, setProductName] = useState('');
+  const [vehicleStatus, setVehicleStatus] = useState<'load' | 'empty'>('load');
   const [weightType, setWeightType] = useState<'gross' | 'tare' | 'one-time'>('gross');
   const [selectedTicket, setSelectedTicket] = useState('');
   const [serialNo, setSerialNo] = useState('');
@@ -148,6 +149,7 @@ export default function UnifiedWeighmentForm({
     setVehicleNo('');
     setPartyName('');
     setProductName('');
+    setVehicleStatus('load');
     setSelectedTicket('');
     setCharges('');
     setSerialNo(nextSerialNo);
@@ -303,6 +305,19 @@ export default function UnifiedWeighmentForm({
                       {mockProducts.map(product => <SelectItem key={product.id} value={product.productName}>
                           {product.productName}
                         </SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="vehicle-status">Vehicle Status</Label>
+                  <Select value={vehicleStatus} onValueChange={v => setVehicleStatus(v as 'load' | 'empty')}>
+                    <SelectTrigger id="vehicle-status">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="load">Load</SelectItem>
+                      <SelectItem value="empty">Empty</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
