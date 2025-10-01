@@ -14,16 +14,19 @@ interface UnifiedWeighmentFormProps {
   liveWeight: number;
   isStable: boolean;
 }
-type OperationType = 'new' | 'update' | 'use-existing' | 'stored-tare';
+type OperationType = 'new' | 'update' | 'stored-tare';
 
-// Mock open tickets for Update and Use Existing operations
+// Mock open tickets for Update operation
 const mockOpenTickets = [{
   id: '1',
   ticketNo: 'TK-2025-001',
   vehicleNo: 'KA-01-AB-1234',
   partyName: 'ABC Traders',
   productName: 'Wheat',
+  vehicleStatus: 'load' as const,
   grossWeight: 15000,
+  tareWeight: null,
+  firstWeightType: 'gross' as const,
   date: '2025-09-30 10:30 AM'
 }, {
   id: '2',
@@ -31,7 +34,10 @@ const mockOpenTickets = [{
   vehicleNo: 'KA-02-CD-5678',
   partyName: 'XYZ Industries',
   productName: 'Rice',
-  grossWeight: 18000,
+  vehicleStatus: 'empty' as const,
+  grossWeight: null,
+  tareWeight: 5500,
+  firstWeightType: 'tare' as const,
   date: '2025-09-30 11:15 AM'
 }];
 
@@ -51,6 +57,7 @@ export default function UnifiedWeighmentForm({
   const [vehicleStatus, setVehicleStatus] = useState<'load' | 'empty'>('load');
   const [weightType, setWeightType] = useState<'gross' | 'tare' | 'one-time'>('gross');
   const [selectedTicket, setSelectedTicket] = useState('');
+  const [searchQuery, setSearchQuery] = useState('');
   const [serialNo, setSerialNo] = useState('');
   const [currentDateTime, setCurrentDateTime] = useState(new Date());
   const [charges, setCharges] = useState('');
@@ -122,12 +129,14 @@ export default function UnifiedWeighmentForm({
       if (!selectedTicket) return;
       const ticket = mockOpenTickets.find(t => t.id === selectedTicket);
       if (ticket) {
-        const netWeight = ticket.grossWeight - liveWeight;
-        success(`Tare weight ${liveWeight} kg captured! Net: ${netWeight} kg. Ticket ${serialNo} closed, bill ready to print.`);
+        if (ticket.firstWeightType === 'gross') {
+          const netWeight = ticket.grossWeight! - liveWeight;
+          success(`Tare weight ${liveWeight} kg captured! Net: ${netWeight} kg. Ticket ${ticket.ticketNo} closed, bill ready to print.`);
+        } else {
+          const netWeight = liveWeight - ticket.tareWeight!;
+          success(`Gross weight ${liveWeight} kg captured! Net: ${netWeight} kg. Ticket ${ticket.ticketNo} closed, bill ready to print.`);
+        }
       }
-    } else if (operationType === 'use-existing') {
-      if (!selectedTicket) return;
-      success(`Ticket closed successfully. Bill ${serialNo} ready to print.`);
     } else if (operationType === 'stored-tare') {
       if (!vehicleNo || !partyName || !productName) return;
       const storedTare = mockStoredTares[vehicleNo];
@@ -151,16 +160,34 @@ export default function UnifiedWeighmentForm({
     setProductName('');
     setVehicleStatus('load');
     setSelectedTicket('');
+    setSearchQuery('');
     setCharges('');
     setSerialNo(nextSerialNo);
   };
-  const handleCloseTicket = (ticketId: string) => {
-    success('Ticket closed successfully!');
+  // Update form fields when ticket is selected
+  const handleTicketSelect = (ticketId: string) => {
+    setSelectedTicket(ticketId);
+    const ticket = mockOpenTickets.find(t => t.id === ticketId);
+    if (ticket) {
+      setVehicleNo(ticket.vehicleNo);
+      setPartyName(ticket.partyName);
+      setProductName(ticket.productName);
+      setVehicleStatus(ticket.vehicleStatus);
+    }
   };
-  const handleCancelTicket = (ticketId: string) => {
-    success('Ticket cancelled.');
-  };
+
   const storedTare = vehicleNo ? mockStoredTares[vehicleNo] : null;
+
+  // Filter tickets based on search query
+  const filteredTickets = mockOpenTickets.filter(ticket => {
+    if (!searchQuery) return true;
+    const query = searchQuery.toLowerCase();
+    return (
+      ticket.ticketNo.toLowerCase().includes(query) ||
+      ticket.vehicleNo.toLowerCase().includes(query) ||
+      ticket.partyName.toLowerCase().includes(query)
+    );
+  });
   return <div className="flex flex-col lg:flex-row gap-6">
       {/* Left Side - 30% */}
       <div className="w-full lg:w-[30%] space-y-6">
@@ -246,15 +273,12 @@ export default function UnifiedWeighmentForm({
             {/* Operation Type Selector */}
             <div className="space-y-3">
               <Label>Operation Type</Label>
-              <div className="flex gap-2 p-1 bg-muted rounded-lg">
+              <div className="grid grid-cols-3 gap-2 p-1 bg-muted rounded-lg">
                 <Button type="button" variant={operationType === 'new' ? 'default' : 'ghost'} onClick={() => setOperationType('new')} className="flex-1">
                   New
                 </Button>
                 <Button type="button" variant={operationType === 'update' ? 'default' : 'ghost'} onClick={() => setOperationType('update')} className="flex-1">
                   Update
-                </Button>
-                <Button type="button" variant={operationType === 'use-existing' ? 'default' : 'ghost'} onClick={() => setOperationType('use-existing')} className="flex-1">
-                  Use Existing
                 </Button>
                 <Button type="button" variant={operationType === 'stored-tare' ? 'default' : 'ghost'} onClick={() => setOperationType('stored-tare')} className="flex-1">
                   Stored Tare
@@ -326,63 +350,38 @@ export default function UnifiedWeighmentForm({
             {/* UPDATE Operation */}
             {operationType === 'update' && <>
                 <div className="space-y-2">
-                  <Label htmlFor="open-ticket">Select Open Ticket (by Serial No.)</Label>
-                  <Select value={selectedTicket} onValueChange={setSelectedTicket} disabled={!serialNo}>
-                    <SelectTrigger id="open-ticket">
-                      <SelectValue placeholder={serialNo ? "Select ticket to update" : "Enter serial no. first"} />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {mockOpenTickets.filter(ticket => serialNo ? ticket.ticketNo.includes(serialNo) : true).map(ticket => <SelectItem key={ticket.id} value={ticket.id}>
-                            {ticket.ticketNo} - {ticket.vehicleNo} - {ticket.partyName} - Gross: {ticket.grossWeight} kg
-                          </SelectItem>)}
-                    </SelectContent>
-                  </Select>
+                  <Label htmlFor="search-ticket">Search Ticket (Serial No./Vehicle/Party)</Label>
+                  <Input 
+                    id="search-ticket" 
+                    type="text" 
+                    value={searchQuery} 
+                    onChange={e => setSearchQuery(e.target.value)} 
+                    placeholder="Type to search tickets..." 
+                    className="uppercase"
+                  />
                 </div>
 
-                {selectedTicket && <div className="p-4 bg-muted rounded-lg space-y-2">
-                    {(() => {
-                const ticket = mockOpenTickets.find(t => t.id === selectedTicket);
-                return ticket ? <>
-                          <div className="flex justify-between text-sm">
-                            <span className="text-muted-foreground">Gross Weight:</span>
-                            <span className="font-mono font-bold">{ticket.grossWeight} kg</span>
-                          </div>
-                          <div className="flex justify-between text-sm">
-                            <span className="text-muted-foreground">Current Tare:</span>
-                            <span className="font-mono font-bold">{liveWeight} kg</span>
-                          </div>
-                          <div className="flex justify-between text-sm">
-                            <span className="text-muted-foreground">Net Weight:</span>
-                            <span className="font-mono font-bold text-primary">{ticket.grossWeight - liveWeight} kg</span>
-                          </div>
-                        </> : null;
-              })()}
-                  </div>}
-              </>}
-
-            {/* USE EXISTING Operation */}
-            {operationType === 'use-existing' && <>
                 <div className="space-y-2">
-                  <Label htmlFor="existing-ticket">Select Open Ticket (by Serial No.)</Label>
-                  <Select value={selectedTicket} onValueChange={setSelectedTicket} disabled={!serialNo}>
-                    <SelectTrigger id="existing-ticket">
-                      <SelectValue placeholder={serialNo ? "Select ticket to close/cancel" : "Enter serial no. first"} />
+                  <Label htmlFor="open-ticket">Select Open Ticket</Label>
+                  <Select value={selectedTicket} onValueChange={handleTicketSelect}>
+                    <SelectTrigger id="open-ticket">
+                      <SelectValue placeholder="Select ticket to update" />
                     </SelectTrigger>
                     <SelectContent>
-                      {mockOpenTickets.filter(ticket => serialNo ? ticket.ticketNo.includes(serialNo) : true).map(ticket => <SelectItem key={ticket.id} value={ticket.id}>
+                      {filteredTickets.map(ticket => <SelectItem key={ticket.id} value={ticket.id}>
                             {ticket.ticketNo} - {ticket.vehicleNo} - {ticket.partyName}
                           </SelectItem>)}
                     </SelectContent>
                   </Select>
                 </div>
 
-                {selectedTicket && <div className="p-4 bg-muted rounded-lg space-y-3">
+                {selectedTicket && <div className="space-y-3">
                     {(() => {
                 const ticket = mockOpenTickets.find(t => t.id === selectedTicket);
                 return ticket ? <>
-                          <div className="space-y-2">
+                          <div className="p-4 bg-muted rounded-lg space-y-2">
                             <div className="flex justify-between text-sm">
-                              <span className="text-muted-foreground">Ticket:</span>
+                              <span className="text-muted-foreground">Ticket No:</span>
                               <span className="font-bold">{ticket.ticketNo}</span>
                             </div>
                             <div className="flex justify-between text-sm">
@@ -398,22 +397,37 @@ export default function UnifiedWeighmentForm({
                               <span className="font-bold">{ticket.productName}</span>
                             </div>
                             <div className="flex justify-between text-sm">
-                              <span className="text-muted-foreground">Gross Weight:</span>
-                              <span className="font-mono font-bold">{ticket.grossWeight} kg</span>
+                              <span className="text-muted-foreground">Vehicle Status:</span>
+                              <Badge variant={ticket.vehicleStatus === 'load' ? 'default' : 'secondary'}>
+                                {ticket.vehicleStatus === 'load' ? 'Load' : 'Empty'}
+                              </Badge>
                             </div>
-                          </div>
-                          <div className="flex gap-2 mt-4">
-                            <Button onClick={() => handleCloseTicket(ticket.id)} className="flex-1">
-                              Close Ticket
-                            </Button>
-                            <Button onClick={() => handleCancelTicket(ticket.id)} variant="destructive" className="flex-1">
-                              Cancel Ticket
-                            </Button>
+                            <div className="flex justify-between text-sm">
+                              <span className="text-muted-foreground">First Weight Captured:</span>
+                              <span className="font-bold">{ticket.firstWeightType === 'gross' ? 'Gross' : 'Tare'}</span>
+                            </div>
+                            <div className="flex justify-between text-sm">
+                              <span className="text-muted-foreground">{ticket.firstWeightType === 'gross' ? 'Gross' : 'Tare'} Weight:</span>
+                              <span className="font-mono font-bold">{ticket.firstWeightType === 'gross' ? ticket.grossWeight : ticket.tareWeight} kg</span>
+                            </div>
+                            <div className="flex justify-between text-sm">
+                              <span className="text-muted-foreground">Current {ticket.firstWeightType === 'gross' ? 'Tare' : 'Gross'}:</span>
+                              <span className="font-mono font-bold">{liveWeight} kg</span>
+                            </div>
+                            <div className="flex justify-between text-sm">
+                              <span className="text-muted-foreground">Net Weight:</span>
+                              <span className="font-mono font-bold text-primary">
+                                {ticket.firstWeightType === 'gross' 
+                                  ? (ticket.grossWeight! - liveWeight) 
+                                  : (liveWeight - ticket.tareWeight!)} kg
+                              </span>
+                            </div>
                           </div>
                         </> : null;
               })()}
                   </div>}
               </>}
+
 
             {/* STORED TARE Operation */}
             {operationType === 'stored-tare' && <>
@@ -477,7 +491,7 @@ export default function UnifiedWeighmentForm({
               </>}
 
             {/* Weight Status Display */}
-            {operationType !== 'use-existing' && <div className="p-4 bg-muted rounded-lg space-y-2">
+            {operationType !== 'update' && <div className="p-4 bg-muted rounded-lg space-y-2">
                 <div className="flex justify-between text-sm">
                   <span className="text-muted-foreground">Current Weight:</span>
                   <span className="font-mono font-bold">{liveWeight} kg</span>
@@ -491,7 +505,7 @@ export default function UnifiedWeighmentForm({
               </div>}
 
             {/* Charges Field - Special Styling */}
-            {operationType !== 'use-existing' && <div className="space-y-2">
+            <div className="space-y-2">
                 <Label htmlFor="charges" className="text-base font-semibold">Charges</Label>
                 <div className="relative">
                   <div className="absolute inset-0 bg-gradient-to-r from-primary/20 via-primary/10 to-primary/20 rounded-lg blur-sm"></div>
@@ -503,17 +517,20 @@ export default function UnifiedWeighmentForm({
                     </div>
                   </div>
                 </div>
-              </div>}
+              </div>
 
             {/* Capture Button */}
-            {operationType !== 'use-existing' && <Button onClick={handleCapture} disabled={!isStable || !serialNo || operationType === 'new' && (!vehicleNo || !partyName || !productName) || operationType === 'update' && !selectedTicket || operationType === 'stored-tare' && (!vehicleNo || !partyName || !productName)} className="w-full">
+            <Button onClick={handleCapture} disabled={!isStable || !serialNo || operationType === 'new' && (!vehicleNo || !partyName || !productName) || operationType === 'update' && !selectedTicket || operationType === 'stored-tare' && (!vehicleNo || !partyName || !productName)} className="w-full">
                 <Check className="mr-2 h-4 w-4" />
                 {operationType === 'new' && weightType === 'gross' && 'Capture Gross Weight'}
                 {operationType === 'new' && weightType === 'one-time' && 'Capture One-Time Weight'}
-                {operationType === 'update' && 'Capture Tare & Close Ticket'}
+                {operationType === 'update' && (() => {
+                  const ticket = mockOpenTickets.find(t => t.id === selectedTicket);
+                  return ticket?.firstWeightType === 'gross' ? 'Capture Tare & Close Ticket' : 'Capture Gross & Close Ticket';
+                })()}
                 {operationType === 'stored-tare' && !storedTare && 'Capture & Store Base Tare'}
                 {operationType === 'stored-tare' && storedTare && 'Capture Gross & Log Trip'}
-              </Button>}
+              </Button>
           </CardContent>
         </Card>
 
