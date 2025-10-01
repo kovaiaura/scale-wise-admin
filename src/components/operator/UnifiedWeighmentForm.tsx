@@ -175,11 +175,11 @@ export default function UnifiedWeighmentForm({
           }} transition={{
             duration: 0.5,
             repeat: isStable ? 0 : Infinity
-          }} className={`text-center p-12 rounded-2xl ${isStable ? 'bg-success/10' : 'bg-warning/10'}`}>
-              <div className={`led-display text-4xl md:text-5xl font-bold ${isStable ? 'text-success' : 'text-warning'}`}>
+          }} className={`flex flex-col items-center justify-center p-8 md:p-12 rounded-2xl min-h-[200px] ${isStable ? 'bg-success/10' : 'bg-warning/10'}`}>
+              <div className={`led-display text-5xl md:text-6xl lg:text-7xl font-bold text-sidebar ${isStable ? 'opacity-100' : 'opacity-90'}`}>
                 {liveWeight.toLocaleString()}
               </div>
-              <div className="text-xl font-medium text-muted-foreground mt-2">KG</div>
+              <div className="text-xl md:text-2xl font-medium text-muted-foreground mt-3">KG</div>
             </motion.div>
           </CardContent>
         </Card>
