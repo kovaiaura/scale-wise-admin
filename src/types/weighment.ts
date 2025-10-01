@@ -21,6 +21,9 @@ export interface Bill {
   createdAt: string;
   updatedAt: string;
   firstWeightType: WeightType;
+  firstVehicleStatus?: VehicleStatus;
+  secondVehicleStatus?: VehicleStatus;
+  secondWeightTimestamp?: string;
   closedAt?: string;
   printedAt?: string;
 }

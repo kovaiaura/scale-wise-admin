@@ -41,6 +41,7 @@ export default function UnifiedWeighmentForm({
   const [partyName, setPartyName] = useState('');
   const [productName, setProductName] = useState('');
   const [vehicleStatus, setVehicleStatus] = useState<'load' | 'empty'>('load');
+  const [currentVehicleStatus, setCurrentVehicleStatus] = useState<'load' | 'empty'>('empty');
   const [weightType, setWeightType] = useState<'gross' | 'tare' | 'one-time'>('gross');
   const [selectedTicket, setSelectedTicket] = useState('');
   const [ticketSearchOpen, setTicketSearchOpen] = useState(false);
@@ -283,8 +284,9 @@ export default function UnifiedWeighmentForm({
         netWeight = grossWeight - tareWeight;
       }
 
-      // Create CLOSED bill
+      // Create CLOSED bill with second weighment details
       const billId = `BILL-${Date.now()}`;
+      const secondWeightTimestamp = new Date().toISOString();
       const bill: Bill = {
         id: billId,
         billNo: ticket.ticketNo,
@@ -301,7 +303,10 @@ export default function UnifiedWeighmentForm({
         createdAt: timestamp,
         updatedAt: timestamp,
         closedAt: timestamp,
-        firstWeightType: ticket.firstWeightType
+        firstWeightType: ticket.firstWeightType,
+        firstVehicleStatus: ticket.vehicleStatus,
+        secondVehicleStatus: currentVehicleStatus,
+        secondWeightTimestamp
       };
 
       saveBill(bill);
@@ -405,6 +410,8 @@ export default function UnifiedWeighmentForm({
       setPartyName(ticket.partyName);
       setProductName(ticket.productName);
       setVehicleStatus(ticket.vehicleStatus);
+      // Auto-suggest opposite status for second weighment
+      setCurrentVehicleStatus(ticket.vehicleStatus === 'load' ? 'empty' : 'load');
     }
   };
 
@@ -741,7 +748,7 @@ export default function UnifiedWeighmentForm({
                               <span className="text-muted-foreground">Current {ticket.firstWeightType === 'gross' ? 'Tare' : 'Gross'}:</span>
                               <span className="font-mono font-bold">{liveWeight} kg</span>
                             </div>
-                            <div className="flex justify-between text-sm">
+                             <div className="flex justify-between text-sm">
                               <span className="text-muted-foreground">Net Weight:</span>
                               <span className="font-mono font-bold text-primary">
                                 {ticket.firstWeightType === 'gross' 
@@ -752,6 +759,22 @@ export default function UnifiedWeighmentForm({
                           </div>
                         </> : null;
               })()}
+                  </div>}
+
+                {selectedTicket && <div className="space-y-2">
+                    <Label htmlFor="current-vehicle-status">Current Vehicle Status</Label>
+                    <Select value={currentVehicleStatus} onValueChange={v => setCurrentVehicleStatus(v as 'load' | 'empty')}>
+                      <SelectTrigger id="current-vehicle-status">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="load">Load</SelectItem>
+                        <SelectItem value="empty">Empty</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <p className="text-xs text-muted-foreground">
+                      Current vehicle status at second weighment (timestamp will be auto-captured)
+                    </p>
                   </div>}
               </>}
 
