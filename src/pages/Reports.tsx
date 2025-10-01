@@ -1,20 +1,24 @@
 import { useState } from 'react';
-import { Calendar, FileDown, FileSpreadsheet, FileText, Check, ChevronsUpDown } from 'lucide-react';
+import { Calendar as CalendarIcon, FileDown, FileSpreadsheet, FileText, Check, ChevronsUpDown, Download } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
+import { Calendar } from '@/components/ui/calendar';
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { mockVehicles, mockParties, mockTickets } from '@/utils/mockData';
 import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
+import { format } from 'date-fns';
 
 export default function Reports() {
   const [vehicleOpen, setVehicleOpen] = useState(false);
   const [partyOpen, setPartyOpen] = useState(false);
   const [selectedVehicle, setSelectedVehicle] = useState('');
   const [selectedParty, setSelectedParty] = useState('');
+  const [fromDate, setFromDate] = useState<Date>();
+  const [toDate, setToDate] = useState<Date>();
   const [reportDialogOpen, setReportDialogOpen] = useState(false);
   const [reportData, setReportData] = useState<any[]>([]);
   const { toast } = useToast();
@@ -42,12 +46,27 @@ export default function Reports() {
       filteredData = filteredData.filter(t => t.partyName === party?.partyName);
     }
 
+    // Filter by date range if dates are selected
+    if (fromDate) {
+      filteredData = filteredData.filter(t => new Date(t.date) >= fromDate);
+    }
+    if (toDate) {
+      filteredData = filteredData.filter(t => new Date(t.date) <= toDate);
+    }
+
     setReportData(filteredData);
     setReportDialogOpen(true);
   };
 
   const getTotalWeight = () => {
     return reportData.reduce((sum, item) => sum + item.netWeight, 0);
+  };
+
+  const handleDownloadReport = () => {
+    toast({
+      title: "Download Started",
+      description: "Your report is being downloaded"
+    });
   };
 
   return (
@@ -66,17 +85,43 @@ export default function Reports() {
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label>From Date</Label>
-                <Button variant="outline" className="w-full justify-start">
-                  <Calendar className="mr-2 h-4 w-4" />
-                  Select date
-                </Button>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button variant="outline" className="w-full justify-start">
+                      <CalendarIcon className="mr-2 h-4 w-4" />
+                      {fromDate ? format(fromDate, "PPP") : "Select date"}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0" align="start">
+                    <Calendar
+                      mode="single"
+                      selected={fromDate}
+                      onSelect={setFromDate}
+                      initialFocus
+                      className={cn("p-3 pointer-events-auto")}
+                    />
+                  </PopoverContent>
+                </Popover>
               </div>
               <div className="space-y-2">
                 <Label>To Date</Label>
-                <Button variant="outline" className="w-full justify-start">
-                  <Calendar className="mr-2 h-4 w-4" />
-                  Select date
-                </Button>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button variant="outline" className="w-full justify-start">
+                      <CalendarIcon className="mr-2 h-4 w-4" />
+                      {toDate ? format(toDate, "PPP") : "Select date"}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0" align="start">
+                    <Calendar
+                      mode="single"
+                      selected={toDate}
+                      onSelect={setToDate}
+                      initialFocus
+                      className={cn("p-3 pointer-events-auto")}
+                    />
+                  </PopoverContent>
+                </Popover>
               </div>
             </div>
 
@@ -256,7 +301,13 @@ export default function Reports() {
       <Dialog open={reportDialogOpen} onOpenChange={setReportDialogOpen}>
         <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>Report Preview</DialogTitle>
+            <div className="flex items-center justify-between">
+              <DialogTitle>Report Preview</DialogTitle>
+              <Button onClick={handleDownloadReport} size="sm">
+                <Download className="mr-2 h-4 w-4" />
+                Download Report
+              </Button>
+            </div>
           </DialogHeader>
           <div className="space-y-4">
             <div className="bg-muted p-4 rounded-lg">
@@ -266,6 +317,18 @@ export default function Reports() {
                   <p className="font-semibold">
                     {selectedVehicle && `Vehicle: ${mockVehicles.find(v => v.id === selectedVehicle)?.vehicleNo}`}
                     {selectedParty && `Party: ${mockParties.find(p => p.id === selectedParty)?.partyName}`}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-sm text-muted-foreground">Date Range</p>
+                  <p className="font-semibold">
+                    {fromDate && toDate 
+                      ? `${format(fromDate, "PP")} - ${format(toDate, "PP")}`
+                      : fromDate 
+                        ? `From ${format(fromDate, "PP")}`
+                        : toDate 
+                          ? `Until ${format(toDate, "PP")}`
+                          : "All dates"}
                   </p>
                 </div>
                 <div>
