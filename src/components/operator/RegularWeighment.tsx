@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Activity, Check, Camera } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -9,6 +9,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { useNotification } from '@/contexts/NotificationContext';
 import { mockVehicles, mockParties, mockProducts } from '@/utils/mockData';
 import OpenTicketsTable from './OpenTicketsTable';
+import { getOpenTickets } from '@/services/billService';
+import { OpenTicket } from '@/types/weighment';
 
 interface RegularWeighmentProps {
   liveWeight: number;
@@ -20,7 +22,16 @@ export default function RegularWeighment({ liveWeight, isStable }: RegularWeighm
   const [partyName, setPartyName] = useState('');
   const [productName, setProductName] = useState('');
   const [weightType, setWeightType] = useState<'gross' | 'tare'>('gross');
+  const [openTickets, setOpenTickets] = useState<OpenTicket[]>([]);
   const { success } = useNotification();
+
+  useEffect(() => {
+    loadOpenTickets();
+  }, []);
+
+  const loadOpenTickets = () => {
+    setOpenTickets(getOpenTickets());
+  };
 
   const handleCapture = () => {
     if (!vehicleNo || !partyName || !productName) {
@@ -181,7 +192,7 @@ export default function RegularWeighment({ liveWeight, isStable }: RegularWeighm
           </CardContent>
         </Card>
 
-        <OpenTicketsTable />
+        <OpenTicketsTable tickets={openTickets} onRefresh={loadOpenTickets} />
       </div>
     </div>
   );

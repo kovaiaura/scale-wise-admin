@@ -409,13 +409,18 @@ export default function UnifiedWeighmentForm({
   // Filter tickets based on search query
   const filteredTickets = openTickets.filter(ticket => {
     if (!searchQuery) return true;
-    const query = searchQuery.toLowerCase();
+    const query = searchQuery.toLowerCase().trim();
     return (
       ticket.ticketNo.toLowerCase().includes(query) ||
       ticket.vehicleNo.toLowerCase().includes(query) ||
       ticket.partyName.toLowerCase().includes(query)
     );
   });
+
+  // Debug logs
+  console.log('Search Query:', searchQuery);
+  console.log('Open Tickets:', openTickets);
+  console.log('Filtered Tickets:', filteredTickets);
 
   const handlePrintComplete = (bill: Bill) => {
     updateBillStatus(bill.id, 'PRINTED');
@@ -652,8 +657,13 @@ export default function UnifiedWeighmentForm({
                     value={searchQuery} 
                     onChange={e => setSearchQuery(e.target.value)} 
                     placeholder="Type to search tickets..." 
-                    className="uppercase"
+                    className="font-mono"
                   />
+                  {openTickets.length > 0 && (
+                    <p className="text-xs text-muted-foreground">
+                      Showing {filteredTickets.length} of {openTickets.length} tickets
+                    </p>
+                  )}
                 </div>
 
                 <div className="space-y-2">
@@ -838,7 +848,12 @@ export default function UnifiedWeighmentForm({
         </Card>
 
         {/* Open Tickets Table - Show for Update operation */}
-        {operationType === 'update' && <OpenTicketsTable />}
+        {operationType === 'update' && (
+          <OpenTicketsTable 
+            tickets={openTickets} 
+            onRefresh={loadOpenTickets} 
+          />
+        )}
       </div>
 
       {/* Bill Print Modal */}
