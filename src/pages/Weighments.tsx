@@ -1,19 +1,32 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Search, Filter, Download } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { mockTickets } from '@/utils/mockData';
+import { getBills } from '@/services/billService';
+import { Bill } from '@/types/weighment';
+import BillPrintView from '@/components/operator/BillPrintView';
 
 export default function Weighments() {
   const [searchTerm, setSearchTerm] = useState('');
+  const [bills, setBills] = useState<Bill[]>([]);
+  const [selectedBill, setSelectedBill] = useState<Bill | null>(null);
 
-  const filteredTickets = mockTickets.filter(
-    (ticket) =>
-      ticket.vehicleNo.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      ticket.partyName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      ticket.ticketNo.toLowerCase().includes(searchTerm.toLowerCase())
+  useEffect(() => {
+    loadBills();
+  }, []);
+
+  const loadBills = () => {
+    const allBills = getBills();
+    setBills(allBills.reverse()); // Show newest first
+  };
+
+  const filteredBills = bills.filter(
+    (bill) =>
+      bill.vehicleNo.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      bill.partyName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      bill.billNo.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   return (
@@ -52,57 +65,86 @@ export default function Weighments() {
             <table className="w-full">
               <thead>
                 <tr className="border-b">
-                  <th className="text-left p-3 text-sm font-medium text-muted-foreground">Ticket No</th>
-                  <th className="text-left p-3 text-sm font-medium text-muted-foreground">Date</th>
+                  <th className="text-left p-3 text-sm font-medium text-muted-foreground">Bill No</th>
+                  <th className="text-left p-3 text-sm font-medium text-muted-foreground">Date/Time</th>
                   <th className="text-left p-3 text-sm font-medium text-muted-foreground">Vehicle</th>
                   <th className="text-left p-3 text-sm font-medium text-muted-foreground">Party</th>
                   <th className="text-left p-3 text-sm font-medium text-muted-foreground">Product</th>
-                  <th className="text-left p-3 text-sm font-medium text-muted-foreground">Type</th>
                   <th className="text-right p-3 text-sm font-medium text-muted-foreground">Gross</th>
                   <th className="text-right p-3 text-sm font-medium text-muted-foreground">Tare</th>
                   <th className="text-right p-3 text-sm font-medium text-muted-foreground">Net</th>
+                  <th className="text-right p-3 text-sm font-medium text-muted-foreground">Charges</th>
                   <th className="text-right p-3 text-sm font-medium text-muted-foreground">Status</th>
                 </tr>
               </thead>
               <tbody>
-                {filteredTickets.map((ticket) => (
-                  <tr
-                    key={ticket.id}
-                    className="border-b hover:bg-muted/50 transition-colors cursor-pointer"
-                  >
-                    <td className="p-3 text-sm font-medium">{ticket.ticketNo}</td>
-                    <td className="p-3 text-sm">{ticket.date}</td>
-                    <td className="p-3 text-sm font-mono">{ticket.vehicleNo}</td>
-                    <td className="p-3 text-sm">{ticket.partyName}</td>
-                    <td className="p-3 text-sm">{ticket.productName}</td>
-                    <td className="p-3 text-sm">
-                      <Badge variant={ticket.containerType === 'Load' ? 'default' : 'secondary'}>
-                        {ticket.containerType}
-                      </Badge>
-                    </td>
-                    <td className="p-3 text-sm text-right font-mono">{ticket.grossWeight}</td>
-                    <td className="p-3 text-sm text-right font-mono">{ticket.tareWeight}</td>
-                    <td className="p-3 text-sm text-right font-mono font-bold">{ticket.netWeight}</td>
-                    <td className="p-3 text-right">
-                      <Badge
-                        variant={
-                          ticket.status === 'completed'
-                            ? 'default'
-                            : ticket.status === 'in-progress'
-                            ? 'secondary'
-                            : 'outline'
-                        }
-                      >
-                        {ticket.status}
-                      </Badge>
+                {filteredBills.length === 0 ? (
+                  <tr>
+                    <td colSpan={10} className="text-center text-muted-foreground py-8">
+                      No bills found
                     </td>
                   </tr>
-                ))}
+                ) : (
+                  filteredBills.map((bill) => (
+                    <tr
+                      key={bill.id}
+                      onClick={() => setSelectedBill(bill)}
+                      className="border-b hover:bg-muted/50 transition-colors cursor-pointer"
+                    >
+                      <td className="p-3 text-sm font-mono font-semibold">{bill.billNo}</td>
+                      <td className="p-3 text-sm">
+                        <div>
+                          <div>{new Date(bill.createdAt).toLocaleDateString('en-IN')}</div>
+                          <div className="text-xs text-muted-foreground">
+                            {new Date(bill.createdAt).toLocaleTimeString('en-IN', { 
+                              hour: '2-digit', 
+                              minute: '2-digit' 
+                            })}
+                          </div>
+                        </div>
+                      </td>
+                      <td className="p-3 text-sm font-semibold">{bill.vehicleNo}</td>
+                      <td className="p-3 text-sm">{bill.partyName}</td>
+                      <td className="p-3 text-sm">{bill.productName}</td>
+                      <td className="p-3 text-sm text-right font-mono">
+                        {bill.grossWeight !== null ? `${bill.grossWeight.toLocaleString()} KG` : '-'}
+                      </td>
+                      <td className="p-3 text-sm text-right font-mono">
+                        {bill.tareWeight !== null ? `${bill.tareWeight.toLocaleString()} KG` : '-'}
+                      </td>
+                      <td className="p-3 text-sm text-right font-mono font-bold">
+                        {bill.netWeight !== null ? `${bill.netWeight.toLocaleString()} KG` : '-'}
+                      </td>
+                      <td className="p-3 text-sm text-right font-semibold">
+                        ₹{bill.charges.toFixed(2)}
+                      </td>
+                      <td className="p-3 text-right">
+                        <Badge
+                          variant={
+                            bill.status === 'CLOSED' || bill.status === 'PRINTED'
+                              ? 'default'
+                              : 'secondary'
+                          }
+                        >
+                          {bill.status}
+                        </Badge>
+                      </td>
+                    </tr>
+                  ))
+                )}
               </tbody>
             </table>
           </div>
         </CardContent>
       </Card>
+
+      {/* Bill Print View Modal */}
+      {selectedBill && (
+        <BillPrintView 
+          bill={selectedBill} 
+          onClose={() => setSelectedBill(null)}
+        />
+      )}
     </div>
   );
 }
