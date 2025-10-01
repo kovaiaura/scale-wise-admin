@@ -11,6 +11,11 @@ import { mockVehicles, mockParties, mockTickets } from '@/utils/mockData';
 import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
+import * as XLSX from 'xlsx';
+import jsPDF from 'jspdf';
+import autoTable from 'jspdf-autotable';
+
+type ExportFormat = 'excel' | 'pdf' | 'csv';
 
 export default function Reports() {
   const [vehicleOpen, setVehicleOpen] = useState(false);
@@ -21,19 +26,10 @@ export default function Reports() {
   const [toDate, setToDate] = useState<Date>();
   const [reportDialogOpen, setReportDialogOpen] = useState(false);
   const [reportData, setReportData] = useState<any[]>([]);
+  const [exportFormat, setExportFormat] = useState<ExportFormat>('excel');
   const { toast } = useToast();
 
-  const handleGenerateReport = () => {
-    if (!selectedVehicle && !selectedParty) {
-      toast({
-        title: "Selection Required",
-        description: "Please select either a vehicle or a party to generate the report",
-        variant: "destructive"
-      });
-      return;
-    }
-
-    // Filter tickets based on selection
+  const generateFilteredData = () => {
     let filteredData = mockTickets.filter(t => t.status === 'completed');
     
     if (selectedVehicle) {
@@ -46,7 +42,6 @@ export default function Reports() {
       filteredData = filteredData.filter(t => t.partyName === party?.partyName);
     }
 
-    // Filter by date range if dates are selected
     if (fromDate) {
       filteredData = filteredData.filter(t => new Date(t.date) >= fromDate);
     }
@@ -54,7 +49,37 @@ export default function Reports() {
       filteredData = filteredData.filter(t => new Date(t.date) <= toDate);
     }
 
+    return filteredData;
+  };
+
+  const handleGenerateReport = () => {
+    if (!selectedVehicle && !selectedParty) {
+      toast({
+        title: "Selection Required",
+        description: "Please select either a vehicle or a party to generate the report",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    const filteredData = generateFilteredData();
     setReportData(filteredData);
+    setReportDialogOpen(true);
+  };
+
+  const handleExportClick = (format: ExportFormat) => {
+    if (!selectedVehicle && !selectedParty) {
+      toast({
+        title: "Selection Required",
+        description: "Please select either a vehicle or a party to generate the report",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    const filteredData = generateFilteredData();
+    setReportData(filteredData);
+    setExportFormat(format);
     setReportDialogOpen(true);
   };
 
@@ -62,11 +87,135 @@ export default function Reports() {
     return reportData.reduce((sum, item) => sum + item.netWeight, 0);
   };
 
-  const handleDownloadReport = () => {
+  const getFileName = () => {
+    const timestamp = format(new Date(), 'yyyy-MM-dd_HHmmss');
+    return `weighment_report_${timestamp}`;
+  };
+
+  const exportToExcel = () => {
+    const worksheetData = [
+      ['Weighment Report'],
+      [''],
+      ['Filter', selectedVehicle ? `Vehicle: ${mockVehicles.find(v => v.id === selectedVehicle)?.vehicleNo}` : `Party: ${mockParties.find(p => p.id === selectedParty)?.partyName}`],
+      ['Date Range', fromDate && toDate ? `${format(fromDate, "PP")} - ${format(toDate, "PP")}` : fromDate ? `From ${format(fromDate, "PP")}` : toDate ? `Until ${format(toDate, "PP")}` : 'All dates'],
+      ['Total Records', reportData.length],
+      ['Total Net Weight', `${getTotalWeight()} KG`],
+      [''],
+      ['Ticket No', 'Date', 'Vehicle', 'Party', 'Material', 'Gross Wt (KG)', 'Tare Wt (KG)', 'Net Wt (KG)'],
+      ...reportData.map(item => [
+        item.ticketNo,
+        item.date,
+        item.vehicleNo,
+        item.partyName,
+        item.productName,
+        item.grossWeight,
+        item.tareWeight,
+        item.netWeight
+      ])
+    ];
+
+    const ws = XLSX.utils.aoa_to_sheet(worksheetData);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'Report');
+    
+    XLSX.writeFile(wb, `${getFileName()}.xlsx`);
+    
     toast({
-      title: "Download Started",
-      description: "Your report is being downloaded"
+      title: "Excel Downloaded",
+      description: "Your report has been exported to Excel"
     });
+  };
+
+  const exportToPDF = () => {
+    const doc = new jsPDF();
+    
+    doc.setFontSize(18);
+    doc.text('Weighment Report', 14, 20);
+    
+    doc.setFontSize(11);
+    doc.text(`Filter: ${selectedVehicle ? `Vehicle: ${mockVehicles.find(v => v.id === selectedVehicle)?.vehicleNo}` : `Party: ${mockParties.find(p => p.id === selectedParty)?.partyName}`}`, 14, 30);
+    doc.text(`Date Range: ${fromDate && toDate ? `${format(fromDate, "PP")} - ${format(toDate, "PP")}` : fromDate ? `From ${format(fromDate, "PP")}` : toDate ? `Until ${format(toDate, "PP")}` : 'All dates'}`, 14, 37);
+    doc.text(`Total Records: ${reportData.length}`, 14, 44);
+    doc.text(`Total Net Weight: ${getTotalWeight()} KG`, 14, 51);
+
+    autoTable(doc, {
+      startY: 60,
+      head: [['Ticket No', 'Date', 'Vehicle', 'Party', 'Material', 'Gross', 'Tare', 'Net']],
+      body: reportData.map(item => [
+        item.ticketNo,
+        item.date,
+        item.vehicleNo,
+        item.partyName,
+        item.productName,
+        item.grossWeight,
+        item.tareWeight,
+        item.netWeight
+      ]),
+      styles: { fontSize: 8 },
+      headStyles: { fillColor: [59, 130, 246] }
+    });
+
+    doc.save(`${getFileName()}.pdf`);
+    
+    toast({
+      title: "PDF Downloaded",
+      description: "Your report has been exported to PDF"
+    });
+  };
+
+  const exportToCSV = () => {
+    const headers = ['Ticket No', 'Date', 'Vehicle', 'Party', 'Material', 'Gross Wt (KG)', 'Tare Wt (KG)', 'Net Wt (KG)'];
+    const csvData = [
+      ['Weighment Report'],
+      [''],
+      ['Filter', selectedVehicle ? `Vehicle: ${mockVehicles.find(v => v.id === selectedVehicle)?.vehicleNo}` : `Party: ${mockParties.find(p => p.id === selectedParty)?.partyName}`],
+      ['Date Range', fromDate && toDate ? `${format(fromDate, "PP")} - ${format(toDate, "PP")}` : fromDate ? `From ${format(fromDate, "PP")}` : toDate ? `Until ${format(toDate, "PP")}` : 'All dates'],
+      ['Total Records', reportData.length],
+      ['Total Net Weight', `${getTotalWeight()} KG`],
+      [''],
+      headers,
+      ...reportData.map(item => [
+        item.ticketNo,
+        item.date,
+        item.vehicleNo,
+        item.partyName,
+        item.productName,
+        item.grossWeight,
+        item.tareWeight,
+        item.netWeight
+      ])
+    ];
+
+    const csvContent = csvData.map(row => row.join(',')).join('\n');
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+    
+    link.setAttribute('href', url);
+    link.setAttribute('download', `${getFileName()}.csv`);
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    
+    toast({
+      title: "CSV Downloaded",
+      description: "Your report has been exported to CSV"
+    });
+  };
+
+  const handleDownloadReport = () => {
+    switch (exportFormat) {
+      case 'excel':
+        exportToExcel();
+        break;
+      case 'pdf':
+        exportToPDF();
+        break;
+      case 'csv':
+        exportToCSV();
+        break;
+    }
   };
 
   return (
@@ -261,15 +410,27 @@ export default function Reports() {
               <CardTitle>Export Options</CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
-              <Button variant="outline" className="w-full justify-start">
+              <Button 
+                variant="outline" 
+                className="w-full justify-start"
+                onClick={() => handleExportClick('excel')}
+              >
                 <FileSpreadsheet className="mr-2 h-4 w-4 text-success" />
                 Export to Excel
               </Button>
-              <Button variant="outline" className="w-full justify-start">
+              <Button 
+                variant="outline" 
+                className="w-full justify-start"
+                onClick={() => handleExportClick('pdf')}
+              >
                 <FileDown className="mr-2 h-4 w-4 text-destructive" />
                 Export to PDF
               </Button>
-              <Button variant="outline" className="w-full justify-start">
+              <Button 
+                variant="outline" 
+                className="w-full justify-start"
+                onClick={() => handleExportClick('csv')}
+              >
                 <FileText className="mr-2 h-4 w-4 text-primary" />
                 Export to CSV
               </Button>
@@ -305,7 +466,7 @@ export default function Reports() {
               <DialogTitle>Report Preview</DialogTitle>
               <Button onClick={handleDownloadReport} size="sm">
                 <Download className="mr-2 h-4 w-4" />
-                Download Report
+                Download {exportFormat === 'excel' ? 'Excel' : exportFormat === 'pdf' ? 'PDF' : 'CSV'}
               </Button>
             </div>
           </DialogHeader>
