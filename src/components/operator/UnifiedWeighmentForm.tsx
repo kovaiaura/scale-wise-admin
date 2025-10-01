@@ -294,7 +294,7 @@ export default function UnifiedWeighmentForm({
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="product">Product</Label>
+                  <Label htmlFor="product">Material</Label>
                   <Select value={productName} onValueChange={setProductName}>
                     <SelectTrigger id="product">
                       <SelectValue placeholder="Select product" />
@@ -483,16 +483,7 @@ export default function UnifiedWeighmentForm({
                   <div className="relative bg-card border-2 border-primary/30 rounded-lg p-4 shadow-lg">
                     <div className="flex items-center gap-3">
                       <span className="text-3xl font-bold text-primary">₹</span>
-                      <Input
-                        id="charges"
-                        type="number"
-                        step="0.01"
-                        min="0"
-                        value={charges}
-                        onChange={(e) => setCharges(e.target.value)}
-                        placeholder="Enter charges"
-                        className="text-xl font-semibold border-0 focus-visible:ring-0 focus-visible:ring-offset-0 bg-transparent"
-                      />
+                      <Input id="charges" type="number" step="0.01" min="0" value={charges} onChange={e => setCharges(e.target.value)} placeholder="Enter charges" className="text-xl font-semibold border-0 focus-visible:ring-0 focus-visible:ring-offset-0 bg-transparent" />
                       <span className="text-sm text-muted-foreground whitespace-nowrap">INR</span>
                     </div>
                   </div>
