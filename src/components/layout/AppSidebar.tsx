@@ -33,7 +33,7 @@ const mainNavItems = [
 const masterNavItems = [
   { title: 'Vehicles', url: '/masters/vehicles', icon: Truck },
   { title: 'Parties', url: '/masters/parties', icon: Users },
-  { title: 'Products', url: '/masters/products', icon: Package },
+  { title: 'Materials', url: '/masters/products', icon: Package },
 ];
 
 const settingsNavItems = [
