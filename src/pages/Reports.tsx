@@ -301,7 +301,7 @@ export default function Reports() {
       <Dialog open={reportDialogOpen} onOpenChange={setReportDialogOpen}>
         <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
           <DialogHeader>
-            <div className="flex items-center justify-between">
+            <div className="flex items-center justify-between pr-8">
               <DialogTitle>Report Preview</DialogTitle>
               <Button onClick={handleDownloadReport} size="sm">
                 <Download className="mr-2 h-4 w-4" />
