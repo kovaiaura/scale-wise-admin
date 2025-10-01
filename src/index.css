@@ -148,3 +148,19 @@ All colors MUST be HSL.
     box-shadow: var(--shadow-lg);
   }
 }
+
+/* Print Styles */
+@media print {
+  body * {
+    visibility: hidden;
+  }
+  
+  .print\:block,
+  .print\:block * {
+    visibility: visible;
+  }
+  
+  @page {
+    margin: 1cm;
+  }
+}

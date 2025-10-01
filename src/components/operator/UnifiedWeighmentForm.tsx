@@ -1,52 +1,33 @@
 import { useState, useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
-import { Activity, Check, Camera, X } from 'lucide-react';
+import { Camera, X, Printer, Check } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { useNotification } from '@/contexts/NotificationContext';
 import { useToast } from '@/hooks/use-toast';
 import { mockVehicles, mockParties, mockProducts } from '@/utils/mockData';
 import OpenTicketsTable from './OpenTicketsTable';
+import BillPrintView from './BillPrintView';
+import { Bill, OpenTicket, OperationType } from '@/types/weighment';
+import { 
+  getNextSerialNo, 
+  updateSerialNo, 
+  saveBill, 
+  saveOpenTicket, 
+  getOpenTickets, 
+  removeOpenTicket,
+  getOpenTicketById,
+  getStoredTareByVehicle,
+  saveStoredTare,
+  updateBillStatus
+} from '@/services/billService';
 interface UnifiedWeighmentFormProps {
   liveWeight: number;
   isStable: boolean;
 }
-type OperationType = 'new' | 'update' | 'stored-tare';
-
-// Mock open tickets for Update operation
-const mockOpenTickets = [{
-  id: '1',
-  ticketNo: 'TK-2025-001',
-  vehicleNo: 'KA-01-AB-1234',
-  partyName: 'ABC Traders',
-  productName: 'Wheat',
-  vehicleStatus: 'load' as const,
-  grossWeight: 15000,
-  tareWeight: null,
-  firstWeightType: 'gross' as const,
-  date: '2025-09-30 10:30 AM'
-}, {
-  id: '2',
-  ticketNo: 'TK-2025-002',
-  vehicleNo: 'KA-02-CD-5678',
-  partyName: 'XYZ Industries',
-  productName: 'Rice',
-  vehicleStatus: 'empty' as const,
-  grossWeight: null,
-  tareWeight: 5500,
-  firstWeightType: 'tare' as const,
-  date: '2025-09-30 11:15 AM'
-}];
-
-// Mock stored tare data
-const mockStoredTares: Record<string, number> = {
-  'KA-01-AB-1234': 5000,
-  'KA-02-CD-5678': 5500
-};
 export default function UnifiedWeighmentForm({
   liveWeight,
   isStable
@@ -64,43 +45,23 @@ export default function UnifiedWeighmentForm({
   const [charges, setCharges] = useState('');
   const [cameraActive, setCameraActive] = useState(false);
   const [capturedImage, setCapturedImage] = useState<string | null>(null);
+  const [billToPrint, setBillToPrint] = useState<Bill | null>(null);
+  const [openTickets, setOpenTickets] = useState<OpenTicket[]>([]);
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
-  const {
-    success
-  } = useNotification();
   const { toast } = useToast();
 
-  // Initialize serial number from localStorage and update date/time
+  // Initialize serial number and load open tickets
   useEffect(() => {
-    // Get the last serial number from localStorage
-    const lastSerialNo = localStorage.getItem('lastSerialNo');
-    let nextSerialNo: string;
-    if (lastSerialNo) {
-      // Parse the serial number (format: WB-2025-001)
-      const parts = lastSerialNo.split('-');
-      const year = new Date().getFullYear().toString();
-      const lastYear = parts[1];
-      if (lastYear === year) {
-        // Same year, increment the number
-        const lastNumber = parseInt(parts[2]);
-        nextSerialNo = `WB-${year}-${String(lastNumber + 1).padStart(3, '0')}`;
-      } else {
-        // New year, reset to 001
-        nextSerialNo = `WB-${year}-001`;
-      }
-    } else {
-      // First time, start with 001
-      const year = new Date().getFullYear().toString();
-      nextSerialNo = `WB-${year}-001`;
-    }
-    setSerialNo(nextSerialNo);
+    setSerialNo(getNextSerialNo());
+    setOpenTickets(getOpenTickets());
 
     // Update date/time every second
     const timer = setInterval(() => {
       setCurrentDateTime(new Date());
     }, 1000);
+    
     return () => {
       clearInterval(timer);
       stopCamera();
@@ -173,65 +134,241 @@ export default function UnifiedWeighmentForm({
   };
 
   const handleCapture = () => {
-    // Save bill data to localStorage
-    const billData = {
-      serialNo,
-      operationType,
-      vehicleNo,
-      partyName,
-      productName,
-      weight: liveWeight,
-      weightType,
-      timestamp: currentDateTime.toISOString(),
-      selectedTicket,
-      charges: charges ? parseFloat(charges) : 0,
-      capturedImage: capturedImage || null
-    };
+    if (!isStable) {
+      toast({
+        title: "Weight Not Stable",
+        description: "Please wait for the weight to stabilize",
+        variant: "destructive"
+      });
+      return;
+    }
 
-    // Get existing bills and add the new one
-    const existingBills = JSON.parse(localStorage.getItem('weighmentBills') || '[]');
-    existingBills.push(billData);
-    localStorage.setItem('weighmentBills', JSON.stringify(existingBills));
+    const chargesAmount = charges ? parseFloat(charges) : 0;
+    const timestamp = new Date().toISOString();
 
-    // Update the last serial number
-    localStorage.setItem('lastSerialNo', serialNo);
+    // NEW OPERATION - Two-Trip or Single-Trip
     if (operationType === 'new') {
-      if (!vehicleNo || !partyName || !productName) return;
+      if (!vehicleNo || !partyName || !productName) {
+        toast({
+          title: "Missing Information",
+          description: "Please fill in all required fields",
+          variant: "destructive"
+        });
+        return;
+      }
+
       if (weightType === 'gross') {
-        success(`Gross weight ${liveWeight} kg captured! Ticket ${serialNo} created (OPEN).`);
+        // Two-Trip: First weighment (Gross weight) - Create OPEN bill
+        const ticketId = `TKT-${Date.now()}`;
+        const billId = `BILL-${Date.now()}`;
+        
+        const openTicket: OpenTicket = {
+          id: ticketId,
+          ticketNo: serialNo,
+          vehicleNo,
+          partyName,
+          productName,
+          vehicleStatus: 'load',
+          grossWeight: liveWeight,
+          tareWeight: null,
+          firstWeightType: 'gross',
+          date: new Date().toLocaleString('en-IN'),
+          charges: chargesAmount,
+          capturedImage
+        };
+
+        const bill: Bill = {
+          id: billId,
+          billNo: serialNo,
+          ticketNo: serialNo,
+          vehicleNo,
+          partyName,
+          productName,
+          grossWeight: liveWeight,
+          tareWeight: null,
+          netWeight: null,
+          charges: chargesAmount,
+          capturedImage,
+          status: 'OPEN',
+          createdAt: timestamp,
+          updatedAt: timestamp,
+          firstWeightType: 'gross'
+        };
+
+        saveOpenTicket(openTicket);
+        saveBill(bill);
+        
+        toast({
+          title: "Ticket Created (OPEN)",
+          description: `Gross weight ${liveWeight.toLocaleString()} KG captured. Ticket: ${serialNo}`
+        });
       } else if (weightType === 'one-time') {
-        success(`One-time weighment ${liveWeight} kg captured! Bill ${serialNo} ready to print (CLOSED).`);
-      }
-    } else if (operationType === 'update') {
-      if (!selectedTicket) return;
-      const ticket = mockOpenTickets.find(t => t.id === selectedTicket);
-      if (ticket) {
-        if (ticket.firstWeightType === 'gross') {
-          const netWeight = ticket.grossWeight! - liveWeight;
-          success(`Tare weight ${liveWeight} kg captured! Net: ${netWeight} kg. Ticket ${ticket.ticketNo} closed, bill ready to print.`);
-        } else {
-          const netWeight = liveWeight - ticket.tareWeight!;
-          success(`Gross weight ${liveWeight} kg captured! Net: ${netWeight} kg. Ticket ${ticket.ticketNo} closed, bill ready to print.`);
-        }
-      }
-    } else if (operationType === 'stored-tare') {
-      if (!vehicleNo || !partyName || !productName) return;
-      const storedTare = mockStoredTares[vehicleNo];
-      if (storedTare) {
-        const netWeight = liveWeight - storedTare;
-        success(`Gross weight ${liveWeight} kg captured! Net: ${netWeight} kg (using stored tare: ${storedTare} kg). Trip ${serialNo} logged.`);
-      } else {
-        success(`Base Tare ${liveWeight} kg captured and stored for vehicle ${vehicleNo}. ${serialNo}`);
+        // Single-Trip: Walk-in - Create CLOSED bill immediately
+        const billId = `BILL-${Date.now()}`;
+        
+        const bill: Bill = {
+          id: billId,
+          billNo: serialNo,
+          ticketNo: serialNo,
+          vehicleNo,
+          partyName,
+          productName,
+          grossWeight: liveWeight,
+          tareWeight: 0,
+          netWeight: liveWeight,
+          charges: chargesAmount,
+          capturedImage,
+          status: 'CLOSED',
+          createdAt: timestamp,
+          updatedAt: timestamp,
+          closedAt: timestamp,
+          firstWeightType: 'one-time'
+        };
+
+        saveBill(bill);
+        setBillToPrint(bill);
+        
+        toast({
+          title: "Bill Created (CLOSED)",
+          description: `One-time weighment ${liveWeight.toLocaleString()} KG. Bill ready to print!`
+        });
       }
     }
 
-    // Generate next serial number
-    const parts = serialNo.split('-');
-    const year = new Date().getFullYear().toString();
-    const currentNumber = parseInt(parts[2]);
-    const nextSerialNo = `WB-${year}-${String(currentNumber + 1).padStart(3, '0')}`;
+    // UPDATE OPERATION - Second weighment to close ticket
+    else if (operationType === 'update') {
+      if (!selectedTicket) {
+        toast({
+          title: "No Ticket Selected",
+          description: "Please select an open ticket to update",
+          variant: "destructive"
+        });
+        return;
+      }
 
-    // Reset form
+      const ticket = getOpenTicketById(selectedTicket);
+      if (!ticket) return;
+
+      let netWeight: number;
+      let grossWeight: number;
+      let tareWeight: number;
+
+      if (ticket.firstWeightType === 'gross') {
+        // First was gross, now capturing tare
+        grossWeight = ticket.grossWeight!;
+        tareWeight = liveWeight;
+        netWeight = grossWeight - tareWeight;
+      } else {
+        // First was tare, now capturing gross
+        tareWeight = ticket.tareWeight!;
+        grossWeight = liveWeight;
+        netWeight = grossWeight - tareWeight;
+      }
+
+      // Create CLOSED bill
+      const billId = `BILL-${Date.now()}`;
+      const bill: Bill = {
+        id: billId,
+        billNo: ticket.ticketNo,
+        ticketNo: ticket.ticketNo,
+        vehicleNo: ticket.vehicleNo,
+        partyName: ticket.partyName,
+        productName: ticket.productName,
+        grossWeight,
+        tareWeight,
+        netWeight,
+        charges: ticket.charges,
+        capturedImage: capturedImage || ticket.capturedImage,
+        status: 'CLOSED',
+        createdAt: timestamp,
+        updatedAt: timestamp,
+        closedAt: timestamp,
+        firstWeightType: ticket.firstWeightType
+      };
+
+      saveBill(bill);
+      removeOpenTicket(selectedTicket);
+      setOpenTickets(getOpenTickets());
+      setBillToPrint(bill);
+
+      toast({
+        title: "Ticket Closed",
+        description: `Net Weight: ${netWeight.toLocaleString()} KG. Bill ready to print!`
+      });
+    }
+
+    // STORED TARE OPERATION
+    else if (operationType === 'stored-tare') {
+      if (!vehicleNo) {
+        toast({
+          title: "Vehicle Required",
+          description: "Please enter vehicle number",
+          variant: "destructive"
+        });
+        return;
+      }
+
+      const existingTare = getStoredTareByVehicle(vehicleNo);
+
+      if (!existingTare) {
+        // First time - Store tare weight
+        saveStoredTare({
+          vehicleNo,
+          tareWeight: liveWeight,
+          storedAt: timestamp,
+          updatedAt: timestamp
+        });
+
+        toast({
+          title: "Tare Weight Stored",
+          description: `Base tare ${liveWeight.toLocaleString()} KG stored for ${vehicleNo}`
+        });
+      } else {
+        // Subsequent trips - Use stored tare
+        if (!partyName || !productName) {
+          toast({
+            title: "Missing Information",
+            description: "Please fill in party and product details",
+            variant: "destructive"
+          });
+          return;
+        }
+
+        const netWeight = liveWeight - existingTare.tareWeight;
+        const billId = `BILL-${Date.now()}`;
+
+        const bill: Bill = {
+          id: billId,
+          billNo: serialNo,
+          ticketNo: serialNo,
+          vehicleNo,
+          partyName,
+          productName,
+          grossWeight: liveWeight,
+          tareWeight: existingTare.tareWeight,
+          netWeight,
+          charges: chargesAmount,
+          capturedImage,
+          status: 'CLOSED',
+          createdAt: timestamp,
+          updatedAt: timestamp,
+          closedAt: timestamp,
+          firstWeightType: 'gross'
+        };
+
+        saveBill(bill);
+        setBillToPrint(bill);
+
+        toast({
+          title: "Trip Completed",
+          description: `Net Weight: ${netWeight.toLocaleString()} KG (Stored Tare: ${existingTare.tareWeight.toLocaleString()} KG)`
+        });
+      }
+    }
+
+    // Update serial number and reset form
+    updateSerialNo(serialNo);
+    setSerialNo(getNextSerialNo());
     setVehicleNo('');
     setPartyName('');
     setProductName('');
@@ -240,12 +377,11 @@ export default function UnifiedWeighmentForm({
     setSearchQuery('');
     setCharges('');
     setCapturedImage(null);
-    setSerialNo(nextSerialNo);
   };
   // Update form fields when ticket is selected
   const handleTicketSelect = (ticketId: string) => {
     setSelectedTicket(ticketId);
-    const ticket = mockOpenTickets.find(t => t.id === ticketId);
+    const ticket = getOpenTicketById(ticketId);
     if (ticket) {
       setVehicleNo(ticket.vehicleNo);
       setPartyName(ticket.partyName);
@@ -254,10 +390,10 @@ export default function UnifiedWeighmentForm({
     }
   };
 
-  const storedTare = vehicleNo ? mockStoredTares[vehicleNo] : null;
+  const storedTare = vehicleNo ? getStoredTareByVehicle(vehicleNo) : null;
 
   // Filter tickets based on search query
-  const filteredTickets = mockOpenTickets.filter(ticket => {
+  const filteredTickets = openTickets.filter(ticket => {
     if (!searchQuery) return true;
     const query = searchQuery.toLowerCase();
     return (
@@ -266,6 +402,15 @@ export default function UnifiedWeighmentForm({
       ticket.partyName.toLowerCase().includes(query)
     );
   });
+
+  const handlePrintComplete = (bill: Bill) => {
+    updateBillStatus(bill.id, 'PRINTED');
+    setBillToPrint(null);
+    toast({
+      title: "Bill Status Updated",
+      description: `Bill ${bill.billNo} marked as PRINTED`
+    });
+  };
   return <div className="flex flex-col lg:flex-row gap-6">
       {/* Left Side - 30% */}
       <div className="w-full lg:w-[30%] space-y-6">
@@ -513,7 +658,7 @@ export default function UnifiedWeighmentForm({
 
                 {selectedTicket && <div className="space-y-3">
                     {(() => {
-                const ticket = mockOpenTickets.find(t => t.id === selectedTicket);
+                const ticket = getOpenTicketById(selectedTicket);
                 return ticket ? <>
                           <div className="p-4 bg-muted rounded-lg space-y-2">
                             <div className="flex justify-between text-sm">
@@ -571,16 +716,14 @@ export default function UnifiedWeighmentForm({
                   <Label htmlFor="shuttle-vehicle">Vehicle Number</Label>
                   <Input id="shuttle-vehicle" type="text" value={vehicleNo} onChange={e => setVehicleNo(e.target.value)} placeholder="Type or select vehicle number" list="shuttle-vehicle-list" className="uppercase" />
                   <datalist id="shuttle-vehicle-list">
-                    {mockVehicles.map(vehicle => <option key={vehicle.id} value={vehicle.vehicleNo}>
-                        {mockStoredTares[vehicle.vehicleNo] ? `Stored Tare: ${mockStoredTares[vehicle.vehicleNo]} kg` : ''}
-                      </option>)}
+                    {mockVehicles.map(vehicle => <option key={vehicle.id} value={vehicle.vehicleNo} />)}
                   </datalist>
                 </div>
 
                 {storedTare && <div className="p-3 bg-primary/10 border border-primary/20 rounded-lg">
                     <div className="flex items-center justify-between">
                       <span className="text-sm font-medium">Stored Tare for {vehicleNo}:</span>
-                      <span className="font-mono font-bold text-primary">{storedTare} kg</span>
+                      <span className="font-mono font-bold text-primary">{storedTare.tareWeight} kg</span>
                     </div>
                   </div>}
 
@@ -617,11 +760,11 @@ export default function UnifiedWeighmentForm({
                     </div>
                     <div className="flex justify-between text-sm">
                       <span className="text-muted-foreground">Stored Tare:</span>
-                      <span className="font-mono font-bold">{storedTare} kg</span>
+                      <span className="font-mono font-bold">{storedTare.tareWeight} kg</span>
                     </div>
                     <div className="flex justify-between text-sm">
                       <span className="text-muted-foreground">Net Weight:</span>
-                      <span className="font-mono font-bold text-primary">{liveWeight - storedTare} kg</span>
+                      <span className="font-mono font-bold text-primary">{liveWeight - storedTare.tareWeight} kg</span>
                     </div>
                   </div>}
               </>}
@@ -661,7 +804,7 @@ export default function UnifiedWeighmentForm({
                 {operationType === 'new' && weightType === 'gross' && 'Capture Gross Weight'}
                 {operationType === 'new' && weightType === 'one-time' && 'Capture One-Time Weight'}
                 {operationType === 'update' && (() => {
-                  const ticket = mockOpenTickets.find(t => t.id === selectedTicket);
+                  const ticket = getOpenTicketById(selectedTicket);
                   return ticket?.firstWeightType === 'gross' ? 'Capture Tare & Close Ticket' : 'Capture Gross & Close Ticket';
                 })()}
                 {operationType === 'stored-tare' && !storedTare && 'Capture & Store Base Tare'}
@@ -673,5 +816,14 @@ export default function UnifiedWeighmentForm({
         {/* Open Tickets Table - Show for Update operation */}
         {operationType === 'update' && <OpenTicketsTable />}
       </div>
+
+      {/* Bill Print Modal */}
+      {billToPrint && (
+        <BillPrintView 
+          bill={billToPrint} 
+          onClose={() => setBillToPrint(null)}
+          onPrintComplete={() => handlePrintComplete(billToPrint)}
+        />
+      )}
     </div>;
 }
