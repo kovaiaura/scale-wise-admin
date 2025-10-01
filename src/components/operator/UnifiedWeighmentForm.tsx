@@ -55,7 +55,7 @@ export default function UnifiedWeighmentForm({
   // Initialize serial number and load open tickets
   useEffect(() => {
     setSerialNo(getNextSerialNo());
-    setOpenTickets(getOpenTickets());
+    loadOpenTickets();
 
     // Update date/time every second
     const timer = setInterval(() => {
@@ -67,6 +67,19 @@ export default function UnifiedWeighmentForm({
       stopCamera();
     };
   }, []);
+
+  // Reload open tickets when operation type changes to 'update'
+  useEffect(() => {
+    if (operationType === 'update') {
+      loadOpenTickets();
+    }
+  }, [operationType]);
+
+  const loadOpenTickets = () => {
+    const tickets = getOpenTickets();
+    setOpenTickets(tickets);
+    console.log('Loaded open tickets:', tickets); // Debug log
+  };
   const startCamera = async () => {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ 
@@ -197,7 +210,7 @@ export default function UnifiedWeighmentForm({
 
         saveOpenTicket(openTicket);
         saveBill(bill);
-        setOpenTickets(getOpenTickets()); // Refresh the open tickets list
+        loadOpenTickets(); // Refresh the open tickets list
         
         toast({
           title: "Ticket Created (OPEN)",
@@ -289,7 +302,7 @@ export default function UnifiedWeighmentForm({
 
       saveBill(bill);
       removeOpenTicket(selectedTicket);
-      setOpenTickets(getOpenTickets());
+      loadOpenTickets(); // Refresh the open tickets list
       setBillToPrint(bill);
 
       toast({
@@ -647,12 +660,22 @@ export default function UnifiedWeighmentForm({
                   <Label htmlFor="open-ticket">Select Open Ticket</Label>
                   <Select value={selectedTicket} onValueChange={handleTicketSelect}>
                     <SelectTrigger id="open-ticket">
-                      <SelectValue placeholder="Select ticket to update" />
+                      <SelectValue placeholder={
+                        filteredTickets.length === 0 
+                          ? (openTickets.length === 0 ? "No open tickets available" : "No tickets match search")
+                          : "Select ticket to update"
+                      } />
                     </SelectTrigger>
                     <SelectContent>
-                      {filteredTickets.map(ticket => <SelectItem key={ticket.id} value={ticket.id}>
+                      {filteredTickets.length === 0 ? (
+                        <div className="p-2 text-sm text-muted-foreground text-center">
+                          {openTickets.length === 0 ? "No open tickets" : "No tickets match your search"}
+                        </div>
+                      ) : (
+                        filteredTickets.map(ticket => <SelectItem key={ticket.id} value={ticket.id}>
                             {ticket.ticketNo} - {ticket.vehicleNo} - {ticket.partyName}
-                          </SelectItem>)}
+                          </SelectItem>)
+                      )}
                     </SelectContent>
                   </Select>
                 </div>
