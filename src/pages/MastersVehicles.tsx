@@ -15,7 +15,6 @@ export default function MastersVehicles() {
   const [formData, setFormData] = useState({
     vehicleNo: '',
     vehicleType: '',
-    capacity: '',
     ownerName: '',
     contactNo: ''
   });
@@ -33,7 +32,7 @@ export default function MastersVehicles() {
   };
 
   const handleSave = () => {
-    if (!formData.vehicleNo || !formData.vehicleType || !formData.capacity || !formData.ownerName || !formData.contactNo) {
+    if (!formData.vehicleNo || !formData.vehicleType || !formData.ownerName || !formData.contactNo) {
       toast({
         title: "Error",
         description: "Please fill in all fields",
@@ -46,7 +45,7 @@ export default function MastersVehicles() {
       id: String(vehicles.length + 1),
       vehicleNo: formData.vehicleNo.toUpperCase(),
       vehicleType: formData.vehicleType,
-      capacity: parseInt(formData.capacity),
+      capacity: 0,
       ownerName: formData.ownerName,
       contactNo: formData.contactNo
     };
@@ -56,7 +55,6 @@ export default function MastersVehicles() {
     setFormData({
       vehicleNo: '',
       vehicleType: '',
-      capacity: '',
       ownerName: '',
       contactNo: ''
     });
@@ -154,17 +152,6 @@ export default function MastersVehicles() {
                 name="vehicleType"
                 placeholder="e.g., Truck, Trailer"
                 value={formData.vehicleType}
-                onChange={handleInputChange}
-              />
-            </div>
-            <div className="grid gap-2">
-              <Label htmlFor="capacity">Capacity (kg) *</Label>
-              <Input
-                id="capacity"
-                name="capacity"
-                type="number"
-                placeholder="e.g., 10000"
-                value={formData.capacity}
                 onChange={handleInputChange}
               />
             </div>
