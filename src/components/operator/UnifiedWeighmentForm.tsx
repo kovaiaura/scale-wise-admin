@@ -197,6 +197,7 @@ export default function UnifiedWeighmentForm({
 
         saveOpenTicket(openTicket);
         saveBill(bill);
+        setOpenTickets(getOpenTickets()); // Refresh the open tickets list
         
         toast({
           title: "Ticket Created (OPEN)",
