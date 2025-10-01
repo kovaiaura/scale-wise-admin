@@ -59,7 +59,7 @@ export default function MastersProducts() {
     
     toast({
       title: "Success",
-      description: "Product added successfully"
+      description: "Material added successfully"
     });
   };
 
@@ -90,7 +90,7 @@ export default function MastersProducts() {
     
     toast({
       title: "Success",
-      description: "Product updated successfully"
+      description: "Material updated successfully"
     });
   };
 
@@ -99,7 +99,7 @@ export default function MastersProducts() {
     setProducts(products.filter(p => p.id !== productId));
     toast({
       title: "Success",
-      description: "Product deleted successfully"
+      description: "Material deleted successfully"
     });
   };
 
@@ -107,12 +107,12 @@ export default function MastersProducts() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold">Products</h1>
-          <p className="text-muted-foreground">Manage products/materials master data</p>
+          <h1 className="text-3xl font-bold">Materials</h1>
+          <p className="text-muted-foreground">Manage materials master data</p>
         </div>
         <Button onClick={() => setIsDialogOpen(true)}>
           <Plus className="mr-2 h-4 w-4" />
-          Add Product
+          Add Material
         </Button>
       </div>
 
@@ -121,7 +121,7 @@ export default function MastersProducts() {
           <div className="relative">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
-              placeholder="Search products..."
+              placeholder="Search materials..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="pl-10"
@@ -133,7 +133,7 @@ export default function MastersProducts() {
             <table className="w-full">
               <thead>
                 <tr className="border-b">
-                  <th className="text-left p-3 text-sm font-medium text-muted-foreground">Product ID</th>
+                  <th className="text-left p-3 text-sm font-medium text-muted-foreground">Material ID</th>
                   <th className="text-left p-3 text-sm font-medium text-muted-foreground">Name</th>
                   <th className="text-left p-3 text-sm font-medium text-muted-foreground">Category</th>
                   <th className="text-left p-3 text-sm font-medium text-muted-foreground">Unit of Measure</th>
@@ -148,7 +148,7 @@ export default function MastersProducts() {
                     className="border-b hover:bg-muted/50 transition-colors cursor-pointer"
                     onClick={() => handleRowClick(product)}
                   >
-                    <td className="p-3 text-sm font-mono font-medium">PRD-{product.id.padStart(3, '0')}</td>
+                    <td className="p-3 text-sm font-mono font-medium">MAT-{product.id.padStart(3, '0')}</td>
                     <td className="p-3 text-sm font-semibold">{product.productName}</td>
                     <td className="p-3 text-sm">
                       <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-500/10 text-blue-500">
@@ -194,11 +194,11 @@ export default function MastersProducts() {
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
         <DialogContent className="sm:max-w-[500px]">
           <DialogHeader>
-            <DialogTitle>Add New Product</DialogTitle>
+            <DialogTitle>Add New Material</DialogTitle>
           </DialogHeader>
           <div className="grid gap-4 py-4">
             <div className="grid gap-2">
-              <Label htmlFor="productName">Product Name *</Label>
+              <Label htmlFor="productName">Material Name *</Label>
               <Input
                 id="productName"
                 name="productName"
@@ -232,7 +232,7 @@ export default function MastersProducts() {
             <Button variant="outline" onClick={() => setIsDialogOpen(false)}>
               Cancel
             </Button>
-            <Button onClick={handleSave}>Save Product</Button>
+            <Button onClick={handleSave}>Save Material</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -240,12 +240,12 @@ export default function MastersProducts() {
       <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
         <DialogContent className="sm:max-w-[500px]">
           <DialogHeader>
-            <DialogTitle>Product Details</DialogTitle>
+            <DialogTitle>Material Details</DialogTitle>
           </DialogHeader>
           {selectedProduct && (
             <div className="grid gap-4 py-4">
               <div className="grid gap-2">
-                <Label htmlFor="edit-productName">Product Name *</Label>
+                <Label htmlFor="edit-productName">Material Name *</Label>
                 <Input
                   id="edit-productName"
                   name="productName"
@@ -280,7 +280,7 @@ export default function MastersProducts() {
             <Button variant="outline" onClick={() => setIsEditDialogOpen(false)}>
               Cancel
             </Button>
-            <Button onClick={handleUpdate}>Update Product</Button>
+            <Button onClick={handleUpdate}>Update Material</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
