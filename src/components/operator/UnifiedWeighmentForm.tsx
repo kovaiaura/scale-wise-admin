@@ -175,8 +175,8 @@ export default function UnifiedWeighmentForm({
           }} transition={{
             duration: 0.5,
             repeat: isStable ? 0 : Infinity
-          }} className={`flex flex-col items-center justify-center p-8 md:p-12 rounded-2xl min-h-[200px] ${isStable ? 'bg-success/10' : 'bg-warning/10'}`}>
-              <div className={`led-display text-5xl md:text-6xl lg:text-7xl font-bold text-sidebar ${isStable ? 'opacity-100' : 'opacity-90'}`}>
+          }} className="flex flex-col items-center justify-center p-8 md:p-12 rounded-2xl min-h-[200px] bg-muted">
+              <div className="led-display text-5xl md:text-6xl lg:text-7xl font-bold text-sidebar">
                 {liveWeight.toLocaleString()}
               </div>
               <div className="text-xl md:text-2xl font-medium text-muted-foreground mt-3">KG</div>
