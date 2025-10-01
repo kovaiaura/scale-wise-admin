@@ -1,6 +1,6 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
-import { Activity, Check, Camera } from 'lucide-react';
+import { Activity, Check, Camera, X } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -8,6 +8,7 @@ import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useNotification } from '@/contexts/NotificationContext';
+import { useToast } from '@/hooks/use-toast';
 import { mockVehicles, mockParties, mockProducts } from '@/utils/mockData';
 import OpenTicketsTable from './OpenTicketsTable';
 interface UnifiedWeighmentFormProps {
@@ -61,9 +62,15 @@ export default function UnifiedWeighmentForm({
   const [serialNo, setSerialNo] = useState('');
   const [currentDateTime, setCurrentDateTime] = useState(new Date());
   const [charges, setCharges] = useState('');
+  const [cameraActive, setCameraActive] = useState(false);
+  const [capturedImage, setCapturedImage] = useState<string | null>(null);
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const streamRef = useRef<MediaStream | null>(null);
   const {
     success
   } = useNotification();
+  const { toast } = useToast();
 
   // Initialize serial number from localStorage and update date/time
   useEffect(() => {
@@ -94,8 +101,77 @@ export default function UnifiedWeighmentForm({
     const timer = setInterval(() => {
       setCurrentDateTime(new Date());
     }, 1000);
-    return () => clearInterval(timer);
+    return () => {
+      clearInterval(timer);
+      stopCamera();
+    };
   }, []);
+  const startCamera = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ 
+        video: { 
+          width: { ideal: 1280 },
+          height: { ideal: 720 },
+          facingMode: 'environment'
+        } 
+      });
+      
+      if (videoRef.current) {
+        videoRef.current.srcObject = stream;
+        streamRef.current = stream;
+        setCameraActive(true);
+        toast({
+          title: "Camera Started",
+          description: "Camera is now active"
+        });
+      }
+    } catch (error) {
+      console.error('Error accessing camera:', error);
+      toast({
+        title: "Camera Error",
+        description: "Could not access camera. Please check permissions.",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const stopCamera = () => {
+    if (streamRef.current) {
+      streamRef.current.getTracks().forEach(track => track.stop());
+      streamRef.current = null;
+      setCameraActive(false);
+      if (videoRef.current) {
+        videoRef.current.srcObject = null;
+      }
+    }
+  };
+
+  const captureSnapshot = () => {
+    if (videoRef.current && canvasRef.current) {
+      const video = videoRef.current;
+      const canvas = canvasRef.current;
+      
+      canvas.width = video.videoWidth;
+      canvas.height = video.videoHeight;
+      
+      const ctx = canvas.getContext('2d');
+      if (ctx) {
+        ctx.drawImage(video, 0, 0);
+        const imageData = canvas.toDataURL('image/jpeg', 0.8);
+        setCapturedImage(imageData);
+        
+        toast({
+          title: "Snapshot Captured",
+          description: "Image captured successfully"
+        });
+      }
+    }
+  };
+
+  const clearSnapshot = () => {
+    setCapturedImage(null);
+  };
+
   const handleCapture = () => {
     // Save bill data to localStorage
     const billData = {
@@ -108,7 +184,8 @@ export default function UnifiedWeighmentForm({
       weightType,
       timestamp: currentDateTime.toISOString(),
       selectedTicket,
-      charges: charges ? parseFloat(charges) : 0
+      charges: charges ? parseFloat(charges) : 0,
+      capturedImage: capturedImage || null
     };
 
     // Get existing bills and add the new one
@@ -162,6 +239,7 @@ export default function UnifiedWeighmentForm({
     setSelectedTicket('');
     setSearchQuery('');
     setCharges('');
+    setCapturedImage(null);
     setSerialNo(nextSerialNo);
   };
   // Update form fields when ticket is selected
@@ -217,17 +295,75 @@ export default function UnifiedWeighmentForm({
           <CardHeader>
             <CardTitle>Camera Feed</CardTitle>
           </CardHeader>
-          <CardContent>
-            <div className="aspect-video bg-muted rounded-lg flex items-center justify-center">
-              <div className="text-center">
-                <Camera className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
-                <p className="text-muted-foreground">Camera feed placeholder</p>
-              </div>
+          <CardContent className="space-y-4">
+            <div className="aspect-video bg-muted rounded-lg overflow-hidden relative">
+              {!cameraActive && !capturedImage && (
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <div className="text-center">
+                    <Camera className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
+                    <p className="text-muted-foreground">Camera not active</p>
+                  </div>
+                </div>
+              )}
+              
+              {cameraActive && !capturedImage && (
+                <video
+                  ref={videoRef}
+                  autoPlay
+                  playsInline
+                  className="w-full h-full object-cover"
+                />
+              )}
+              
+              {capturedImage && (
+                <div className="relative w-full h-full">
+                  <img 
+                    src={capturedImage} 
+                    alt="Captured snapshot" 
+                    className="w-full h-full object-cover"
+                  />
+                  <Button
+                    size="icon"
+                    variant="destructive"
+                    className="absolute top-2 right-2"
+                    onClick={clearSnapshot}
+                  >
+                    <X className="h-4 w-4" />
+                  </Button>
+                </div>
+              )}
+              
+              <canvas ref={canvasRef} className="hidden" />
             </div>
-            <Button className="w-full mt-4">
-              <Camera className="mr-2 h-4 w-4" />
-              Capture Snapshot
-            </Button>
+            
+            <div className="grid grid-cols-2 gap-2">
+              {!cameraActive ? (
+                <Button 
+                  onClick={startCamera} 
+                  className="col-span-2"
+                  variant="outline"
+                >
+                  <Camera className="mr-2 h-4 w-4" />
+                  Start Camera
+                </Button>
+              ) : (
+                <>
+                  <Button 
+                    onClick={captureSnapshot}
+                    disabled={!!capturedImage}
+                  >
+                    <Camera className="mr-2 h-4 w-4" />
+                    Capture
+                  </Button>
+                  <Button 
+                    onClick={stopCamera}
+                    variant="outline"
+                  >
+                    Stop Camera
+                  </Button>
+                </>
+              )}
+            </div>
           </CardContent>
         </Card>
       </div>
