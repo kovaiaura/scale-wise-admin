@@ -5,18 +5,49 @@ import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { mockVehicles, mockParties } from '@/utils/mockData';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { mockVehicles, mockParties, mockTickets } from '@/utils/mockData';
 import { cn } from '@/lib/utils';
+import { useToast } from '@/hooks/use-toast';
 
 export default function Reports() {
   const [vehicleOpen, setVehicleOpen] = useState(false);
   const [partyOpen, setPartyOpen] = useState(false);
   const [selectedVehicle, setSelectedVehicle] = useState('');
   const [selectedParty, setSelectedParty] = useState('');
+  const [reportDialogOpen, setReportDialogOpen] = useState(false);
+  const [reportData, setReportData] = useState<any[]>([]);
+  const { toast } = useToast();
 
   const handleGenerateReport = () => {
-    // Report generation logic will go here
-    console.log('Generating report for:', { selectedVehicle, selectedParty });
+    if (!selectedVehicle && !selectedParty) {
+      toast({
+        title: "Selection Required",
+        description: "Please select either a vehicle or a party to generate the report",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    // Filter tickets based on selection
+    let filteredData = mockTickets.filter(t => t.status === 'completed');
+    
+    if (selectedVehicle) {
+      const vehicle = mockVehicles.find(v => v.id === selectedVehicle);
+      filteredData = filteredData.filter(t => t.vehicleNo === vehicle?.vehicleNo);
+    }
+    
+    if (selectedParty) {
+      const party = mockParties.find(p => p.id === selectedParty);
+      filteredData = filteredData.filter(t => t.partyName === party?.partyName);
+    }
+
+    setReportData(filteredData);
+    setReportDialogOpen(true);
+  };
+
+  const getTotalWeight = () => {
+    return reportData.reduce((sum, item) => sum + item.netWeight, 0);
   };
 
   return (
@@ -207,11 +238,11 @@ export default function Reports() {
             <CardContent className="space-y-4">
               <div className="flex justify-between">
                 <span className="text-sm text-muted-foreground">Total Records:</span>
-                <span className="font-bold">0</span>
+                <span className="font-bold">{reportData.length}</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-sm text-muted-foreground">Total Weight:</span>
-                <span className="font-bold">0 KG</span>
+                <span className="font-bold">{getTotalWeight()} KG</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-sm text-muted-foreground">Date Range:</span>
@@ -221,6 +252,74 @@ export default function Reports() {
           </Card>
         </div>
       </div>
+
+      <Dialog open={reportDialogOpen} onOpenChange={setReportDialogOpen}>
+        <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Report Preview</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="bg-muted p-4 rounded-lg">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <p className="text-sm text-muted-foreground">Filter</p>
+                  <p className="font-semibold">
+                    {selectedVehicle && `Vehicle: ${mockVehicles.find(v => v.id === selectedVehicle)?.vehicleNo}`}
+                    {selectedParty && `Party: ${mockParties.find(p => p.id === selectedParty)?.partyName}`}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-sm text-muted-foreground">Total Records</p>
+                  <p className="font-semibold">{reportData.length}</p>
+                </div>
+                <div>
+                  <p className="text-sm text-muted-foreground">Total Net Weight</p>
+                  <p className="font-semibold">{getTotalWeight()} KG</p>
+                </div>
+              </div>
+            </div>
+
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead>
+                  <tr className="border-b">
+                    <th className="text-left p-3 text-sm font-medium text-muted-foreground">Ticket No</th>
+                    <th className="text-left p-3 text-sm font-medium text-muted-foreground">Date</th>
+                    <th className="text-left p-3 text-sm font-medium text-muted-foreground">Vehicle</th>
+                    <th className="text-left p-3 text-sm font-medium text-muted-foreground">Party</th>
+                    <th className="text-left p-3 text-sm font-medium text-muted-foreground">Material</th>
+                    <th className="text-right p-3 text-sm font-medium text-muted-foreground">Gross Wt</th>
+                    <th className="text-right p-3 text-sm font-medium text-muted-foreground">Tare Wt</th>
+                    <th className="text-right p-3 text-sm font-medium text-muted-foreground">Net Wt</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {reportData.length === 0 ? (
+                    <tr>
+                      <td colSpan={8} className="text-center p-8 text-muted-foreground">
+                        No records found
+                      </td>
+                    </tr>
+                  ) : (
+                    reportData.map((item) => (
+                      <tr key={item.id} className="border-b hover:bg-muted/50">
+                        <td className="p-3 text-sm font-mono">{item.ticketNo}</td>
+                        <td className="p-3 text-sm">{item.date}</td>
+                        <td className="p-3 text-sm font-mono">{item.vehicleNo}</td>
+                        <td className="p-3 text-sm">{item.partyName}</td>
+                        <td className="p-3 text-sm">{item.productName}</td>
+                        <td className="p-3 text-sm text-right">{item.grossWeight}</td>
+                        <td className="p-3 text-sm text-right">{item.tareWeight}</td>
+                        <td className="p-3 text-sm text-right font-semibold">{item.netWeight}</td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
