@@ -602,7 +602,7 @@ export default function UnifiedWeighmentForm({
                   <Label htmlFor="vehicle">Vehicle Number</Label>
                   <Input id="vehicle" type="text" value={vehicleNo} onChange={e => setVehicleNo(e.target.value)} placeholder="Type or select vehicle number" list="vehicle-list" className="uppercase" />
                   <datalist id="vehicle-list">
-                    {mockVehicles.map(vehicle => <option key={vehicle.id} value={vehicle.vehicleNo} />)}
+                    {mockVehicles.slice(-5).map(vehicle => <option key={vehicle.id} value={vehicle.vehicleNo} />)}
                   </datalist>
                 </div>
 
@@ -610,7 +610,7 @@ export default function UnifiedWeighmentForm({
                   <Label htmlFor="party">Party Name</Label>
                   <Input id="party" type="text" value={partyName} onChange={e => setPartyName(e.target.value)} placeholder="Type or select party name" list="party-list" />
                   <datalist id="party-list">
-                    {mockParties.map(party => <option key={party.id} value={party.partyName} />)}
+                    {mockParties.slice(-5).map(party => <option key={party.id} value={party.partyName} />)}
                   </datalist>
                 </div>
 
