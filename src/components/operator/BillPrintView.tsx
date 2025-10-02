@@ -86,10 +86,35 @@ export default function BillPrintView({ bill, onClose, onPrintComplete }: BillPr
       yPos += 10;
       doc.setFontSize(12);
       doc.text(`Charges: ₹${bill.charges.toFixed(2)}`, 20, yPos);
+      yPos += 10;
     }
     
-    // Footer
-    yPos = 270;
+    // Captured Image
+    if (bill.capturedImage) {
+      yPos += 5;
+      doc.setFontSize(10);
+      doc.text('Captured Image:', 20, yPos);
+      yPos += 5;
+      
+      try {
+        // Add image to PDF (centered, max width 170mm)
+        const imgWidth = 170;
+        const imgHeight = 100;
+        doc.addImage(bill.capturedImage, 'JPEG', 20, yPos, imgWidth, imgHeight);
+        yPos += imgHeight + 10;
+      } catch (error) {
+        console.error('Error adding image to PDF:', error);
+        doc.text('(Image could not be added)', 20, yPos);
+        yPos += 10;
+      }
+    }
+    
+    // Footer - dynamic position based on content
+    if (yPos > 250) {
+      doc.addPage();
+      yPos = 20;
+    }
+    
     doc.setFontSize(10);
     doc.text('This is a computer generated bill', 105, yPos, { align: 'center' });
     doc.text(`Status: ${bill.status}`, 105, yPos + 5, { align: 'center' });
