@@ -623,7 +623,21 @@ export default function UnifiedWeighmentForm({
                           onValueChange={setVehicleNo}
                         />
                         <CommandList>
-                          <CommandEmpty>Type to add new vehicle</CommandEmpty>
+                          {vehicleNo && !mockVehicles.some(v => v.vehicleNo.toLowerCase() === vehicleNo.toLowerCase()) ? (
+                            <CommandItem
+                              value={vehicleNo}
+                              onSelect={() => {
+                                setVehicleNo(vehicleNo.toUpperCase());
+                                setVehicleSearchOpen(false);
+                              }}
+                              className="bg-primary/10 font-semibold uppercase"
+                            >
+                              <Check className="mr-2 h-4 w-4" />
+                              Add new vehicle: {vehicleNo.toUpperCase()}
+                            </CommandItem>
+                          ) : (
+                            <CommandEmpty>Start typing to add new vehicle</CommandEmpty>
+                          )}
                           <CommandGroup heading="Recent Vehicles (Latest 5)">
                             {mockVehicles.slice(-5).reverse().map((vehicle) => (
                               <CommandItem
@@ -679,7 +693,21 @@ export default function UnifiedWeighmentForm({
                           onValueChange={setPartyName}
                         />
                         <CommandList>
-                          <CommandEmpty>Type to add new party</CommandEmpty>
+                          {partyName && !mockParties.some(p => p.partyName.toLowerCase() === partyName.toLowerCase()) ? (
+                            <CommandItem
+                              value={partyName}
+                              onSelect={() => {
+                                setPartyName(partyName);
+                                setPartySearchOpen(false);
+                              }}
+                              className="bg-primary/10 font-semibold"
+                            >
+                              <Check className="mr-2 h-4 w-4" />
+                              Add new party: {partyName}
+                            </CommandItem>
+                          ) : (
+                            <CommandEmpty>Start typing to add new party</CommandEmpty>
+                          )}
                           <CommandGroup heading="Recent Parties (Latest 5)">
                             {mockParties.slice(-5).reverse().map((party) => (
                               <CommandItem
@@ -879,11 +907,73 @@ export default function UnifiedWeighmentForm({
             {/* STORED TARE Operation */}
             {operationType === 'stored-tare' && <>
                 <div className="space-y-2">
-                  <Label htmlFor="shuttle-vehicle">Vehicle Number</Label>
-                  <Input id="shuttle-vehicle" type="text" value={vehicleNo} onChange={e => setVehicleNo(e.target.value)} placeholder="Type or select vehicle number" list="shuttle-vehicle-list" className="uppercase" />
-                  <datalist id="shuttle-vehicle-list">
-                    {mockVehicles.map(vehicle => <option key={vehicle.id} value={vehicle.vehicleNo} />)}
-                  </datalist>
+                  <Label>Vehicle Number</Label>
+                  <Popover open={vehicleSearchOpen} onOpenChange={setVehicleSearchOpen}>
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant="outline"
+                        role="combobox"
+                        aria-expanded={vehicleSearchOpen}
+                        className="w-full justify-between uppercase font-normal"
+                      >
+                        {vehicleNo || "Type or select vehicle..."}
+                        <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-full p-0" align="start">
+                      <Command>
+                        <CommandInput 
+                          placeholder="Search or type vehicle number..." 
+                          className="h-9"
+                          value={vehicleNo}
+                          onValueChange={setVehicleNo}
+                        />
+                        <CommandList>
+                          {vehicleNo && !mockVehicles.some(v => v.vehicleNo.toLowerCase() === vehicleNo.toLowerCase()) ? (
+                            <CommandItem
+                              value={vehicleNo}
+                              onSelect={() => {
+                                setVehicleNo(vehicleNo.toUpperCase());
+                                setVehicleSearchOpen(false);
+                              }}
+                              className="bg-primary/10 font-semibold uppercase"
+                            >
+                              <Check className="mr-2 h-4 w-4" />
+                              Add new vehicle: {vehicleNo.toUpperCase()}
+                            </CommandItem>
+                          ) : (
+                            <CommandEmpty>Start typing to add new vehicle</CommandEmpty>
+                          )}
+                          <CommandGroup heading="Recent Vehicles (Latest 5)">
+                            {mockVehicles.slice(-5).reverse().map((vehicle) => (
+                              <CommandItem
+                                key={vehicle.id}
+                                value={vehicle.vehicleNo}
+                                onSelect={(value) => {
+                                  setVehicleNo(value.toUpperCase());
+                                  setVehicleSearchOpen(false);
+                                }}
+                                className="uppercase"
+                              >
+                                <Check
+                                  className={cn(
+                                    "mr-2 h-4 w-4",
+                                    vehicleNo === vehicle.vehicleNo ? "opacity-100" : "opacity-0"
+                                  )}
+                                />
+                                <div className="flex flex-col">
+                                  <span className="font-semibold">{vehicle.vehicleNo}</span>
+                                  <span className="text-xs text-muted-foreground">
+                                    {vehicle.vehicleType} - {vehicle.ownerName}
+                                  </span>
+                                </div>
+                              </CommandItem>
+                            ))}
+                          </CommandGroup>
+                        </CommandList>
+                      </Command>
+                    </PopoverContent>
+                  </Popover>
                 </div>
 
                 {storedTare && <div className="p-3 bg-primary/10 border border-primary/20 rounded-lg">
