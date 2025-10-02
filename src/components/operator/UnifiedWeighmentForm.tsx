@@ -45,6 +45,8 @@ export default function UnifiedWeighmentForm({
   const [weightType, setWeightType] = useState<'gross' | 'tare' | 'one-time'>('gross');
   const [selectedTicket, setSelectedTicket] = useState('');
   const [ticketSearchOpen, setTicketSearchOpen] = useState(false);
+  const [vehicleSearchOpen, setVehicleSearchOpen] = useState(false);
+  const [partySearchOpen, setPartySearchOpen] = useState(false);
   const [serialNo, setSerialNo] = useState('');
   const [currentDateTime, setCurrentDateTime] = useState(new Date());
   const [charges, setCharges] = useState('');
@@ -599,19 +601,114 @@ export default function UnifiedWeighmentForm({
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="vehicle">Vehicle Number</Label>
-                  <Input id="vehicle" type="text" value={vehicleNo} onChange={e => setVehicleNo(e.target.value)} placeholder="Type or select vehicle number" list="vehicle-list" className="uppercase" />
-                  <datalist id="vehicle-list">
-                    {mockVehicles.slice(-5).map(vehicle => <option key={vehicle.id} value={vehicle.vehicleNo} />)}
-                  </datalist>
+                  <Label>Vehicle Number</Label>
+                  <Popover open={vehicleSearchOpen} onOpenChange={setVehicleSearchOpen}>
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant="outline"
+                        role="combobox"
+                        aria-expanded={vehicleSearchOpen}
+                        className="w-full justify-between uppercase font-normal"
+                      >
+                        {vehicleNo || "Type or select vehicle..."}
+                        <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-full p-0" align="start">
+                      <Command>
+                        <CommandInput 
+                          placeholder="Search or type vehicle number..." 
+                          className="h-9"
+                          value={vehicleNo}
+                          onValueChange={setVehicleNo}
+                        />
+                        <CommandList>
+                          <CommandEmpty>Type to add new vehicle</CommandEmpty>
+                          <CommandGroup heading="Recent Vehicles (Latest 5)">
+                            {mockVehicles.slice(-5).reverse().map((vehicle) => (
+                              <CommandItem
+                                key={vehicle.id}
+                                value={vehicle.vehicleNo}
+                                onSelect={(value) => {
+                                  setVehicleNo(value.toUpperCase());
+                                  setVehicleSearchOpen(false);
+                                }}
+                                className="uppercase"
+                              >
+                                <Check
+                                  className={cn(
+                                    "mr-2 h-4 w-4",
+                                    vehicleNo === vehicle.vehicleNo ? "opacity-100" : "opacity-0"
+                                  )}
+                                />
+                                <div className="flex flex-col">
+                                  <span className="font-semibold">{vehicle.vehicleNo}</span>
+                                  <span className="text-xs text-muted-foreground">
+                                    {vehicle.vehicleType} - {vehicle.ownerName}
+                                  </span>
+                                </div>
+                              </CommandItem>
+                            ))}
+                          </CommandGroup>
+                        </CommandList>
+                      </Command>
+                    </PopoverContent>
+                  </Popover>
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="party">Party Name</Label>
-                  <Input id="party" type="text" value={partyName} onChange={e => setPartyName(e.target.value)} placeholder="Type or select party name" list="party-list" />
-                  <datalist id="party-list">
-                    {mockParties.slice(-5).map(party => <option key={party.id} value={party.partyName} />)}
-                  </datalist>
+                  <Label>Party Name</Label>
+                  <Popover open={partySearchOpen} onOpenChange={setPartySearchOpen}>
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant="outline"
+                        role="combobox"
+                        aria-expanded={partySearchOpen}
+                        className="w-full justify-between font-normal"
+                      >
+                        {partyName || "Type or select party..."}
+                        <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-full p-0" align="start">
+                      <Command>
+                        <CommandInput 
+                          placeholder="Search or type party name..." 
+                          className="h-9"
+                          value={partyName}
+                          onValueChange={setPartyName}
+                        />
+                        <CommandList>
+                          <CommandEmpty>Type to add new party</CommandEmpty>
+                          <CommandGroup heading="Recent Parties (Latest 5)">
+                            {mockParties.slice(-5).reverse().map((party) => (
+                              <CommandItem
+                                key={party.id}
+                                value={party.partyName}
+                                onSelect={(value) => {
+                                  setPartyName(value);
+                                  setPartySearchOpen(false);
+                                }}
+                              >
+                                <Check
+                                  className={cn(
+                                    "mr-2 h-4 w-4",
+                                    partyName === party.partyName ? "opacity-100" : "opacity-0"
+                                  )}
+                                />
+                                <div className="flex flex-col">
+                                  <span className="font-semibold">{party.partyName}</span>
+                                  <span className="text-xs text-muted-foreground">
+                                    {party.contactPerson} - {party.contactNo}
+                                  </span>
+                                </div>
+                              </CommandItem>
+                            ))}
+                          </CommandGroup>
+                        </CommandList>
+                      </Command>
+                    </PopoverContent>
+                  </Popover>
                 </div>
 
                 <div className="space-y-2">
