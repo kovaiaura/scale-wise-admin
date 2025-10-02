@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { Calendar as CalendarIcon, FileDown, FileSpreadsheet, FileText, Check, ChevronsUpDown, Download } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -7,7 +7,10 @@ import { Calendar } from '@/components/ui/calendar';
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { mockVehicles, mockParties, mockTickets } from '@/utils/mockData';
+import { Badge } from '@/components/ui/badge';
+import { mockTickets } from '@/utils/mockData';
+import { getVehicles, getParties } from '@/services/masterDataService';
+import { getUniqueVehiclesFromBills, getUniquePartiesFromBills } from '@/services/dynamicDataService';
 import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
@@ -29,16 +32,45 @@ export default function Reports() {
   const [exportFormat, setExportFormat] = useState<ExportFormat>('excel');
   const { toast } = useToast();
 
+  // Combine master data with walk-in entries from bills
+  const allVehicles = useMemo(() => {
+    const masterVehicles = getVehicles().map(v => ({ 
+      ...v, 
+      source: 'master' as const 
+    }));
+    const walkInVehicles = getUniqueVehiclesFromBills();
+    
+    // Filter out walk-in vehicles that already exist in master
+    const masterVehicleNos = new Set(masterVehicles.map(v => v.vehicleNo));
+    const uniqueWalkIn = walkInVehicles.filter(v => !masterVehicleNos.has(v.vehicleNo));
+    
+    return [...masterVehicles, ...uniqueWalkIn];
+  }, []);
+
+  const allParties = useMemo(() => {
+    const masterParties = getParties().map(p => ({ 
+      ...p, 
+      source: 'master' as const 
+    }));
+    const walkInParties = getUniquePartiesFromBills();
+    
+    // Filter out walk-in parties that already exist in master
+    const masterPartyNames = new Set(masterParties.map(p => p.partyName));
+    const uniqueWalkIn = walkInParties.filter(p => !masterPartyNames.has(p.partyName));
+    
+    return [...masterParties, ...uniqueWalkIn];
+  }, []);
+
   const generateFilteredData = () => {
     let filteredData = mockTickets.filter(t => t.status === 'completed');
     
     if (selectedVehicle) {
-      const vehicle = mockVehicles.find(v => v.id === selectedVehicle);
+      const vehicle = allVehicles.find(v => v.id === selectedVehicle);
       filteredData = filteredData.filter(t => t.vehicleNo === vehicle?.vehicleNo);
     }
     
     if (selectedParty) {
-      const party = mockParties.find(p => p.id === selectedParty);
+      const party = allParties.find(p => p.id === selectedParty);
       filteredData = filteredData.filter(t => t.partyName === party?.partyName);
     }
 
@@ -96,7 +128,7 @@ export default function Reports() {
     const worksheetData = [
       ['Weighment Report'],
       [''],
-      ['Filter', selectedVehicle ? `Vehicle: ${mockVehicles.find(v => v.id === selectedVehicle)?.vehicleNo}` : `Party: ${mockParties.find(p => p.id === selectedParty)?.partyName}`],
+      ['Filter', selectedVehicle ? `Vehicle: ${allVehicles.find(v => v.id === selectedVehicle)?.vehicleNo}` : `Party: ${allParties.find(p => p.id === selectedParty)?.partyName}`],
       ['Date Range', fromDate && toDate ? `${format(fromDate, "PP")} - ${format(toDate, "PP")}` : fromDate ? `From ${format(fromDate, "PP")}` : toDate ? `Until ${format(toDate, "PP")}` : 'All dates'],
       ['Total Records', reportData.length],
       ['Total Net Weight', `${getTotalWeight()} KG`],
@@ -133,7 +165,7 @@ export default function Reports() {
     doc.text('Weighment Report', 14, 20);
     
     doc.setFontSize(11);
-    doc.text(`Filter: ${selectedVehicle ? `Vehicle: ${mockVehicles.find(v => v.id === selectedVehicle)?.vehicleNo}` : `Party: ${mockParties.find(p => p.id === selectedParty)?.partyName}`}`, 14, 30);
+    doc.text(`Filter: ${selectedVehicle ? `Vehicle: ${allVehicles.find(v => v.id === selectedVehicle)?.vehicleNo}` : `Party: ${allParties.find(p => p.id === selectedParty)?.partyName}`}`, 14, 30);
     doc.text(`Date Range: ${fromDate && toDate ? `${format(fromDate, "PP")} - ${format(toDate, "PP")}` : fromDate ? `From ${format(fromDate, "PP")}` : toDate ? `Until ${format(toDate, "PP")}` : 'All dates'}`, 14, 37);
     doc.text(`Total Records: ${reportData.length}`, 14, 44);
     doc.text(`Total Net Weight: ${getTotalWeight()} KG`, 14, 51);
@@ -168,7 +200,7 @@ export default function Reports() {
     const csvData = [
       ['Weighment Report'],
       [''],
-      ['Filter', selectedVehicle ? `Vehicle: ${mockVehicles.find(v => v.id === selectedVehicle)?.vehicleNo}` : `Party: ${mockParties.find(p => p.id === selectedParty)?.partyName}`],
+      ['Filter', selectedVehicle ? `Vehicle: ${allVehicles.find(v => v.id === selectedVehicle)?.vehicleNo}` : `Party: ${allParties.find(p => p.id === selectedParty)?.partyName}`],
       ['Date Range', fromDate && toDate ? `${format(fromDate, "PP")} - ${format(toDate, "PP")}` : fromDate ? `From ${format(fromDate, "PP")}` : toDate ? `Until ${format(toDate, "PP")}` : 'All dates'],
       ['Total Records', reportData.length],
       ['Total Net Weight', `${getTotalWeight()} KG`],
@@ -285,7 +317,7 @@ export default function Reports() {
                     className="w-full justify-between"
                   >
                     {selectedVehicle
-                      ? mockVehicles.find((vehicle) => vehicle.id === selectedVehicle)?.vehicleNo
+                      ? allVehicles.find((vehicle) => vehicle.id === selectedVehicle)?.vehicleNo
                       : "Search vehicle..."}
                     <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                   </Button>
@@ -311,7 +343,7 @@ export default function Reports() {
                           />
                           All Vehicles
                         </CommandItem>
-                        {mockVehicles.map((vehicle) => (
+                        {allVehicles.map((vehicle) => (
                           <CommandItem
                             key={vehicle.id}
                             value={vehicle.vehicleNo}
@@ -326,7 +358,12 @@ export default function Reports() {
                                 selectedVehicle === vehicle.id ? "opacity-100" : "opacity-0"
                               )}
                             />
-                            {vehicle.vehicleNo}
+                            <div className="flex items-center gap-2">
+                              {vehicle.vehicleNo}
+                              {vehicle.source === 'walk-in' && (
+                                <Badge variant="secondary" className="text-xs">Walk-in</Badge>
+                              )}
+                            </div>
                           </CommandItem>
                         ))}
                       </CommandGroup>
@@ -347,7 +384,7 @@ export default function Reports() {
                     className="w-full justify-between"
                   >
                     {selectedParty
-                      ? mockParties.find((party) => party.id === selectedParty)?.partyName
+                      ? allParties.find((party) => party.id === selectedParty)?.partyName
                       : "Search party..."}
                     <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                   </Button>
@@ -373,7 +410,7 @@ export default function Reports() {
                           />
                           All Parties
                         </CommandItem>
-                        {mockParties.map((party) => (
+                        {allParties.map((party) => (
                           <CommandItem
                             key={party.id}
                             value={party.partyName}
@@ -388,7 +425,12 @@ export default function Reports() {
                                 selectedParty === party.id ? "opacity-100" : "opacity-0"
                               )}
                             />
-                            {party.partyName}
+                            <div className="flex items-center gap-2">
+                              {party.partyName}
+                              {party.source === 'walk-in' && (
+                                <Badge variant="secondary" className="text-xs">Walk-in</Badge>
+                              )}
+                            </div>
                           </CommandItem>
                         ))}
                       </CommandGroup>
@@ -476,8 +518,8 @@ export default function Reports() {
                 <div>
                   <p className="text-sm text-muted-foreground">Filter</p>
                   <p className="font-semibold">
-                    {selectedVehicle && `Vehicle: ${mockVehicles.find(v => v.id === selectedVehicle)?.vehicleNo}`}
-                    {selectedParty && `Party: ${mockParties.find(p => p.id === selectedParty)?.partyName}`}
+                    {selectedVehicle && `Vehicle: ${allVehicles.find(v => v.id === selectedVehicle)?.vehicleNo}`}
+                    {selectedParty && `Party: ${allParties.find(p => p.id === selectedParty)?.partyName}`}
                   </p>
                 </div>
                 <div>

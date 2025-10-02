@@ -156,6 +156,12 @@ export const mockProducts: Product[] = [
     category: 'Raw Material',
     unit: 'KG',
   },
+  {
+    id: '4',
+    productName: 'Others',
+    category: 'Miscellaneous',
+    unit: 'KG',
+  },
 ];
 
 export const mockDashboardStats = {
