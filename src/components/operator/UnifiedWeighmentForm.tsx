@@ -710,14 +710,14 @@ export default function UnifiedWeighmentForm({
                           placeholder="Search or type party name..." 
                           className="h-9"
                           value={partyName}
-                          onValueChange={setPartyName}
+                          onValueChange={(value) => setPartyName(value.toUpperCase())}
                         />
                         <CommandList>
                           {partyName && !mockParties.some(p => p.partyName.toLowerCase() === partyName.toLowerCase()) ? (
                             <CommandItem
                               value={partyName}
                               onSelect={() => {
-                                setPartyName(partyName);
+                                setPartyName(partyName.toUpperCase());
                                 setPartySearchOpen(false);
                               }}
                               className="bg-primary/10 font-semibold"
@@ -734,7 +734,7 @@ export default function UnifiedWeighmentForm({
                                 key={party.id}
                                 value={party.partyName}
                                 onSelect={(value) => {
-                                  setPartyName(value);
+                                  setPartyName(value.toUpperCase());
                                   setPartySearchOpen(false);
                                 }}
                               >
@@ -1009,7 +1009,7 @@ export default function UnifiedWeighmentForm({
 
                 <div className="space-y-2">
                   <Label htmlFor="shuttle-party">Party Name</Label>
-                  <Input id="shuttle-party" type="text" value={partyName} onChange={e => setPartyName(e.target.value)} placeholder="Type or select party name" list="shuttle-party-list" />
+                  <Input id="shuttle-party" type="text" value={partyName} onChange={e => setPartyName(e.target.value.toUpperCase())} placeholder="Type or select party name" list="shuttle-party-list" />
                   <datalist id="shuttle-party-list">
                     {mockParties.map(party => <option key={party.id} value={party.partyName} />)}
                   </datalist>

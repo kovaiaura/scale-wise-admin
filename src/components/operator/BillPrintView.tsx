@@ -48,11 +48,11 @@ export default function BillPrintView({ bill, onClose, onPrintComplete }: BillPr
     doc.setFontSize(11);
     let yPos = 70;
     
-    doc.text(`Vehicle Number: ${bill.vehicleNo}`, 20, yPos);
+    doc.text(`Vehicle Number: ${bill.vehicleNo.toUpperCase()}`, 20, yPos);
     yPos += 10;
-    doc.text(`Party Name: ${bill.partyName}`, 20, yPos);
+    doc.text(`Party Name: ${bill.partyName.toUpperCase()}`, 20, yPos);
     yPos += 10;
-    doc.text(`Product: ${bill.productName}`, 20, yPos);
+    doc.text(`Product: ${bill.productName.toUpperCase()}`, 20, yPos);
     yPos += 10;
     
     // Line separator
@@ -159,7 +159,7 @@ export default function BillPrintView({ bill, onClose, onPrintComplete }: BillPr
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <p className="text-sm text-gray-600">Vehicle Number</p>
-                  <p className="text-xl font-bold">{bill.vehicleNo}</p>
+                  <p className="text-xl font-bold">{bill.vehicleNo.toUpperCase()}</p>
                 </div>
                 <div>
                   <p className="text-sm text-gray-600">Status</p>
@@ -169,12 +169,12 @@ export default function BillPrintView({ bill, onClose, onPrintComplete }: BillPr
               
               <div>
                 <p className="text-sm text-gray-600">Party Name</p>
-                <p className="text-lg font-semibold">{bill.partyName}</p>
+                <p className="text-lg font-semibold">{bill.partyName.toUpperCase()}</p>
               </div>
               
               <div>
                 <p className="text-sm text-gray-600">Product/Material</p>
-                <p className="text-lg font-semibold">{bill.productName}</p>
+                <p className="text-lg font-semibold">{bill.productName.toUpperCase()}</p>
               </div>
             </div>
             
