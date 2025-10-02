@@ -163,6 +163,26 @@ export default function UnifiedWeighmentForm({
       return;
     }
 
+    // Auto-capture camera image if camera is active
+    let finalCapturedImage = capturedImage;
+    if (cameraActive && !capturedImage && videoRef.current && canvasRef.current) {
+      const video = videoRef.current;
+      const canvas = canvasRef.current;
+      const context = canvas.getContext('2d');
+      
+      if (context) {
+        canvas.width = video.videoWidth;
+        canvas.height = video.videoHeight;
+        context.drawImage(video, 0, 0, canvas.width, canvas.height);
+        finalCapturedImage = canvas.toDataURL('image/jpeg');
+        
+        toast({
+          title: "Camera Captured",
+          description: "Live camera feed captured with weighment"
+        });
+      }
+    }
+
     const chargesAmount = charges ? parseFloat(charges) : 0;
     const timestamp = new Date().toISOString();
 
@@ -194,7 +214,7 @@ export default function UnifiedWeighmentForm({
           firstWeightType: 'gross',
           date: new Date().toLocaleString('en-IN'),
           charges: chargesAmount,
-          capturedImage
+          capturedImage: finalCapturedImage
         };
 
         const bill: Bill = {
@@ -208,7 +228,7 @@ export default function UnifiedWeighmentForm({
           tareWeight: null,
           netWeight: null,
           charges: chargesAmount,
-          capturedImage,
+          capturedImage: finalCapturedImage,
           status: 'OPEN',
           createdAt: timestamp,
           updatedAt: timestamp,
@@ -238,7 +258,7 @@ export default function UnifiedWeighmentForm({
           tareWeight: 0,
           netWeight: liveWeight,
           charges: chargesAmount,
-          capturedImage,
+          capturedImage: finalCapturedImage,
           status: 'CLOSED',
           createdAt: timestamp,
           updatedAt: timestamp,
@@ -300,7 +320,7 @@ export default function UnifiedWeighmentForm({
         tareWeight,
         netWeight,
         charges: ticket.charges,
-        capturedImage: capturedImage || ticket.capturedImage,
+        capturedImage: finalCapturedImage || ticket.capturedImage,
         status: 'CLOSED',
         createdAt: timestamp,
         updatedAt: timestamp,
@@ -373,7 +393,7 @@ export default function UnifiedWeighmentForm({
           tareWeight: existingTare.tareWeight,
           netWeight,
           charges: chargesAmount,
-          capturedImage,
+          capturedImage: finalCapturedImage,
           status: 'CLOSED',
           createdAt: timestamp,
           updatedAt: timestamp,
