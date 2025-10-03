@@ -1085,9 +1085,31 @@ export default function UnifiedWeighmentForm({
                           size="sm" 
                           className="w-full"
                           onClick={() => {
+                            if (!isStable) {
+                              toast({
+                                title: "Weight Not Stable",
+                                description: "Please wait for weight to stabilize",
+                                variant: "destructive"
+                              });
+                              return;
+                            }
+
+                            const timestamp = new Date().toISOString();
+                            saveStoredTare({
+                              vehicleNo,
+                              tareWeight: liveWeight,
+                              storedAt: expiredTare ? expiredTare.storedAt : timestamp,
+                              updatedAt: timestamp
+                            });
+
+                            toast({
+                              title: "Tare Weight Stored",
+                              description: `Tare ${liveWeight.toLocaleString()} KG stored for ${vehicleNo}. Valid for 2 days.`
+                            });
+
+                            // Force UI refresh to show valid tare
                             setManualTareEntry(false);
-                            setPartyName('');
-                            setProductName('');
+                            setManualTareWeight('');
                           }}
                         >
                           Weigh Empty Vehicle Now
@@ -1109,9 +1131,31 @@ export default function UnifiedWeighmentForm({
                             size="sm" 
                             className="flex-1"
                             onClick={() => {
+                              if (!isStable) {
+                                toast({
+                                  title: "Weight Not Stable",
+                                  description: "Please wait for weight to stabilize",
+                                  variant: "destructive"
+                                });
+                                return;
+                              }
+
+                              const timestamp = new Date().toISOString();
+                              saveStoredTare({
+                                vehicleNo,
+                                tareWeight: liveWeight,
+                                storedAt: timestamp,
+                                updatedAt: timestamp
+                              });
+
+                              toast({
+                                title: "Tare Weight Stored",
+                                description: `Tare ${liveWeight.toLocaleString()} KG stored for ${vehicleNo}. Valid for 2 days.`
+                              });
+
+                              // Force UI refresh to show valid tare
                               setManualTareEntry(false);
-                              setPartyName('');
-                              setProductName('');
+                              setManualTareWeight('');
                             }}
                           >
                             Weigh Empty Vehicle
