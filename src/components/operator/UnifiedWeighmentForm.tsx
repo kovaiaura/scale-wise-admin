@@ -238,10 +238,11 @@ export default function UnifiedWeighmentForm({
         saveOpenTicket(openTicket);
         saveBill(bill);
         loadOpenTickets(); // Refresh the open tickets list
+        setBillToPrint(bill); // Show print dialog for OPEN bill
         
         toast({
           title: "Ticket Created (OPEN)",
-          description: `Gross weight ${liveWeight.toLocaleString()} KG captured. Ticket: ${serialNo}`
+          description: `Gross weight ${liveWeight.toLocaleString()} KG captured. Bill ready to print!`
         });
       } else if (weightType === 'one-time') {
         // Single-Trip: Walk-in - Create CLOSED bill immediately
