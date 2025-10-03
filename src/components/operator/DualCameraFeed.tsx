@@ -1,8 +1,9 @@
 import { useState, useRef, useEffect } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Camera, CameraOff, Trash2 } from 'lucide-react';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Camera, CameraOff, Trash2, Check } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 
@@ -163,53 +164,42 @@ export default function DualCameraFeed({
   };
 
   return (
-    <div className="space-y-8">
-      {/* Section Header */}
-      <div className="flex items-center justify-between">
-        <h3 className="text-xl font-semibold">Camera Feed</h3>
-        {(frontCameraActive || rearCameraActive) && (
-          <Button
-            onClick={captureAllActive}
-            size="lg"
-            className="gap-2"
-          >
-            <Camera className="h-5 w-5" />
-            Capture All Active Cameras
-          </Button>
-        )}
-      </div>
+    <Tabs defaultValue="front" className="w-full">
+      <TabsList className="grid w-full grid-cols-2">
+        <TabsTrigger value="front" className="gap-2">
+          <Camera className="h-4 w-4" />
+          Front Camera
+          {capturedFrontImage && (
+            <Badge variant="secondary" className="ml-2 h-5 w-5 p-0 flex items-center justify-center">
+              <Check className="h-3 w-3" />
+            </Badge>
+          )}
+        </TabsTrigger>
+        <TabsTrigger value="rear" className="gap-2">
+          <Camera className="h-4 w-4" />
+          Rear Camera
+          {capturedRearImage && (
+            <Badge variant="secondary" className="ml-2 h-5 w-5 p-0 flex items-center justify-center">
+              <Check className="h-3 w-3" />
+            </Badge>
+          )}
+        </TabsTrigger>
+      </TabsList>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-        {/* Front Camera */}
+      {/* Front Camera Tab */}
+      <TabsContent value="front" className="mt-4">
         <Card className={cn(
-          "overflow-hidden transition-all duration-300",
-          frontCameraActive && "ring-2 ring-primary shadow-lg"
+          "overflow-hidden transition-all",
+          frontCameraActive && "ring-2 ring-primary"
         )}>
-          <CardHeader className="pb-4 space-y-3">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className={cn(
-                  "p-2 rounded-lg",
-                  frontCameraActive ? "bg-primary/10" : "bg-muted"
-                )}>
-                  <Camera className={cn(
-                    "h-5 w-5",
-                    frontCameraActive ? "text-primary" : "text-muted-foreground"
-                  )} />
-                </div>
-                <CardTitle className="text-lg">Front Camera</CardTitle>
-              </div>
-              <Badge 
-                variant={frontCameraActive ? "default" : "secondary"}
-                className="px-3 py-1"
-              >
+          <CardContent className="p-4 space-y-3">
+            <div className="flex items-center justify-between mb-2">
+              <Badge variant={frontCameraActive ? "default" : "secondary"}>
                 {frontCameraActive ? 'Active' : 'Inactive'}
               </Badge>
             </div>
-          </CardHeader>
-          
-          <CardContent className="space-y-4 px-6 pb-6">
-            <div className="relative aspect-video bg-muted/50 rounded-xl overflow-hidden border-2 border-border">
+
+            <div className="relative aspect-[4/3] bg-muted/50 rounded-lg overflow-hidden border">
               {capturedFrontImage ? (
                 <img 
                   src={capturedFrontImage} 
@@ -225,32 +215,30 @@ export default function DualCameraFeed({
                   className="w-full h-full object-cover"
                 />
               ) : (
-                <div className="flex flex-col items-center justify-center h-full text-muted-foreground gap-3">
-                  <CameraOff className="h-16 w-16 opacity-50" />
-                  <p className="text-sm font-medium">Camera Inactive</p>
+                <div className="flex flex-col items-center justify-center h-full text-muted-foreground gap-2">
+                  <CameraOff className="h-12 w-12 opacity-40" />
+                  <p className="text-xs">Camera Inactive</p>
                 </div>
               )}
             </div>
 
             <canvas ref={frontCanvasRef} className="hidden" />
 
-            <div className="flex gap-3">
+            <div className="flex gap-2">
               {!frontCameraActive ? (
                 <Button
                   onClick={() => startCamera('front')}
                   variant="outline"
-                  size="lg"
                   className="flex-1 gap-2"
                 >
                   <Camera className="h-4 w-4" />
-                  Start Camera
+                  Start
                 </Button>
               ) : (
                 <>
                   <Button
                     onClick={() => stopCamera('front')}
                     variant="outline"
-                    size="lg"
                     className="flex-1 gap-2"
                   >
                     <CameraOff className="h-4 w-4" />
@@ -260,7 +248,6 @@ export default function DualCameraFeed({
                   {!capturedFrontImage && (
                     <Button
                       onClick={() => captureSnapshot('front')}
-                      size="lg"
                       className="flex-1 gap-2"
                     >
                       <Camera className="h-4 w-4" />
@@ -274,7 +261,6 @@ export default function DualCameraFeed({
                 <Button
                   onClick={onClearFront}
                   variant="destructive"
-                  size="lg"
                   className="flex-1 gap-2"
                 >
                   <Trash2 className="h-4 w-4" />
@@ -284,37 +270,22 @@ export default function DualCameraFeed({
             </div>
           </CardContent>
         </Card>
+      </TabsContent>
 
-        {/* Rear Camera */}
+      {/* Rear Camera Tab */}
+      <TabsContent value="rear" className="mt-4">
         <Card className={cn(
-          "overflow-hidden transition-all duration-300",
-          rearCameraActive && "ring-2 ring-primary shadow-lg"
+          "overflow-hidden transition-all",
+          rearCameraActive && "ring-2 ring-primary"
         )}>
-          <CardHeader className="pb-4 space-y-3">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className={cn(
-                  "p-2 rounded-lg",
-                  rearCameraActive ? "bg-primary/10" : "bg-muted"
-                )}>
-                  <Camera className={cn(
-                    "h-5 w-5",
-                    rearCameraActive ? "text-primary" : "text-muted-foreground"
-                  )} />
-                </div>
-                <CardTitle className="text-lg">Rear Camera</CardTitle>
-              </div>
-              <Badge 
-                variant={rearCameraActive ? "default" : "secondary"}
-                className="px-3 py-1"
-              >
+          <CardContent className="p-4 space-y-3">
+            <div className="flex items-center justify-between mb-2">
+              <Badge variant={rearCameraActive ? "default" : "secondary"}>
                 {rearCameraActive ? 'Active' : 'Inactive'}
               </Badge>
             </div>
-          </CardHeader>
-          
-          <CardContent className="space-y-4 px-6 pb-6">
-            <div className="relative aspect-video bg-muted/50 rounded-xl overflow-hidden border-2 border-border">
+
+            <div className="relative aspect-[4/3] bg-muted/50 rounded-lg overflow-hidden border">
               {capturedRearImage ? (
                 <img 
                   src={capturedRearImage} 
@@ -330,32 +301,30 @@ export default function DualCameraFeed({
                   className="w-full h-full object-cover"
                 />
               ) : (
-                <div className="flex flex-col items-center justify-center h-full text-muted-foreground gap-3">
-                  <CameraOff className="h-16 w-16 opacity-50" />
-                  <p className="text-sm font-medium">Camera Inactive</p>
+                <div className="flex flex-col items-center justify-center h-full text-muted-foreground gap-2">
+                  <CameraOff className="h-12 w-12 opacity-40" />
+                  <p className="text-xs">Camera Inactive</p>
                 </div>
               )}
             </div>
 
             <canvas ref={rearCanvasRef} className="hidden" />
 
-            <div className="flex gap-3">
+            <div className="flex gap-2">
               {!rearCameraActive ? (
                 <Button
                   onClick={() => startCamera('rear')}
                   variant="outline"
-                  size="lg"
                   className="flex-1 gap-2"
                 >
                   <Camera className="h-4 w-4" />
-                  Start Camera
+                  Start
                 </Button>
               ) : (
                 <>
                   <Button
                     onClick={() => stopCamera('rear')}
                     variant="outline"
-                    size="lg"
                     className="flex-1 gap-2"
                   >
                     <CameraOff className="h-4 w-4" />
@@ -365,7 +334,6 @@ export default function DualCameraFeed({
                   {!capturedRearImage && (
                     <Button
                       onClick={() => captureSnapshot('rear')}
-                      size="lg"
                       className="flex-1 gap-2"
                     >
                       <Camera className="h-4 w-4" />
@@ -379,7 +347,6 @@ export default function DualCameraFeed({
                 <Button
                   onClick={onClearRear}
                   variant="destructive"
-                  size="lg"
                   className="flex-1 gap-2"
                 >
                   <Trash2 className="h-4 w-4" />
@@ -389,7 +356,7 @@ export default function DualCameraFeed({
             </div>
           </CardContent>
         </Card>
-      </div>
-    </div>
+      </TabsContent>
+    </Tabs>
   );
 }

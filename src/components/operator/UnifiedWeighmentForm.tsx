@@ -408,48 +408,8 @@ export default function UnifiedWeighmentForm({
     });
   };
   return <div className="flex flex-col lg:flex-row gap-6">
-      {/* Left Side - 30% */}
-      <div className="w-full lg:w-[30%] space-y-6">
-        <Card className="card-shadow">
-          <CardHeader>
-            <CardTitle className="flex items-center justify-between">
-              Live Weight Display
-              
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <motion.div animate={{
-            scale: isStable ? 1 : [1, 1.02, 1]
-          }} transition={{
-            duration: 0.5,
-            repeat: isStable ? 0 : Infinity
-          }} className="flex flex-col items-center justify-center p-8 md:p-12 min-h-[200px]">
-              <div className="text-3xl md:text-4xl lg:text-5xl font-bold whitespace-nowrap">
-                {liveWeight.toLocaleString()}
-              </div>
-              <div className="text-xl md:text-2xl font-medium text-muted-foreground mt-3">KG</div>
-            </motion.div>
-          </CardContent>
-        </Card>
-
-        <Card className="card-shadow">
-          <CardHeader>
-            <CardTitle>Camera Feed</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <DualCameraFeed
-              onCapture={handleDualCameraCapture}
-              capturedFrontImage={capturedFrontImage}
-              capturedRearImage={capturedRearImage}
-              onClearFront={clearFrontImage}
-              onClearRear={clearRearImage}
-            />
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Right Side - 70% */}
-      <div className="w-full lg:w-[70%] space-y-6">
+      {/* Right Side - Form 58% */}
+      <div className="w-full lg:w-[58%] space-y-6 order-2 lg:order-1">
         <Card className="card-shadow">
           <CardHeader>
             <CardTitle>Capture Weighment</CardTitle>
@@ -1186,5 +1146,40 @@ export default function UnifiedWeighmentForm({
           onPrintComplete={() => handlePrintComplete(billToPrint)}
         />
       )}
+
+      {/* Left Side - Weight & Cameras 42% */}
+      <div className="w-full lg:w-[42%] space-y-4 order-1 lg:order-2">
+        <Card className="card-shadow">
+          <CardContent className="pt-6">
+            <motion.div animate={{
+            scale: isStable ? 1 : [1, 1.02, 1]
+          }} transition={{
+            duration: 0.5,
+            repeat: isStable ? 0 : Infinity
+          }} className="flex flex-col items-center justify-center py-8">
+              <div className="text-sm font-medium text-muted-foreground mb-2">Live Weight</div>
+              <div className="text-4xl lg:text-5xl font-bold">
+                {liveWeight.toLocaleString()}
+              </div>
+              <div className="text-xl font-medium text-muted-foreground mt-2">KG</div>
+              <Badge variant={isStable ? "default" : "secondary"} className="mt-3">
+                {isStable ? "Stable" : "Measuring"}
+              </Badge>
+            </motion.div>
+          </CardContent>
+        </Card>
+
+        <Card className="card-shadow">
+          <CardContent className="pt-6">
+            <DualCameraFeed
+              onCapture={handleDualCameraCapture}
+              capturedFrontImage={capturedFrontImage}
+              capturedRearImage={capturedRearImage}
+              onClearFront={clearFrontImage}
+              onClearRear={clearRearImage}
+            />
+          </CardContent>
+        </Card>
+      </div>
     </div>;
 }
