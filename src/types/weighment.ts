@@ -16,7 +16,9 @@ export interface Bill {
   tareWeight: number | null;
   netWeight: number | null;
   charges: number;
-  capturedImage: string | null;
+  capturedImage: string | null; // Deprecated - kept for backward compatibility
+  frontImage: string | null;
+  rearImage: string | null;
   status: BillStatus;
   createdAt: string;
   updatedAt: string;
@@ -40,7 +42,9 @@ export interface OpenTicket {
   firstWeightType: 'gross' | 'tare';
   date: string;
   charges: number;
-  capturedImage: string | null;
+  capturedImage: string | null; // Deprecated - kept for backward compatibility
+  frontImage: string | null;
+  rearImage: string | null;
 }
 
 export interface StoredTare {

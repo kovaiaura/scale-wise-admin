@@ -89,15 +89,54 @@ export default function BillPrintView({ bill, onClose, onPrintComplete }: BillPr
       yPos += 10;
     }
     
-    // Captured Image
-    if (bill.capturedImage) {
+    // Captured Images
+    if (bill.frontImage || bill.rearImage) {
+      yPos += 5;
+      doc.setFontSize(10);
+      
+      if (bill.frontImage && bill.rearImage) {
+        doc.text('Captured Images:', 20, yPos);
+        yPos += 5;
+        
+        try {
+          // Add both images side by side
+          const imgWidth = 80;
+          const imgHeight = 60;
+          doc.addImage(bill.frontImage, 'JPEG', 20, yPos, imgWidth, imgHeight);
+          doc.text('Front', 20 + imgWidth/2, yPos + imgHeight + 5, { align: 'center' });
+          doc.addImage(bill.rearImage, 'JPEG', 110, yPos, imgWidth, imgHeight);
+          doc.text('Rear', 110 + imgWidth/2, yPos + imgHeight + 5, { align: 'center' });
+          yPos += imgHeight + 15;
+        } catch (error) {
+          console.error('Error adding images to PDF:', error);
+          doc.text('(Images could not be added)', 20, yPos);
+          yPos += 10;
+        }
+      } else {
+        const singleImage = bill.frontImage || bill.rearImage;
+        const label = bill.frontImage ? 'Front Camera' : 'Rear Camera';
+        doc.text(`Captured Image (${label}):`, 20, yPos);
+        yPos += 5;
+        
+        try {
+          const imgWidth = 170;
+          const imgHeight = 100;
+          doc.addImage(singleImage!, 'JPEG', 20, yPos, imgWidth, imgHeight);
+          yPos += imgHeight + 10;
+        } catch (error) {
+          console.error('Error adding image to PDF:', error);
+          doc.text('(Image could not be added)', 20, yPos);
+          yPos += 10;
+        }
+      }
+    } else if (bill.capturedImage) {
+      // Backward compatibility for old bills
       yPos += 5;
       doc.setFontSize(10);
       doc.text('Captured Image:', 20, yPos);
       yPos += 5;
       
       try {
-        // Add image to PDF (centered, max width 170mm)
         const imgWidth = 170;
         const imgHeight = 100;
         doc.addImage(bill.capturedImage, 'JPEG', 20, yPos, imgWidth, imgHeight);
@@ -239,8 +278,37 @@ export default function BillPrintView({ bill, onClose, onPrintComplete }: BillPr
               </div>
             )}
             
-            {/* Captured Image */}
-            {bill.capturedImage && (
+            {/* Captured Images */}
+            {(bill.frontImage || bill.rearImage) && (
+              <div className="mt-6">
+                <p className="text-sm text-gray-600 mb-2">Captured Images:</p>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {bill.frontImage && (
+                    <div>
+                      <p className="text-xs text-gray-500 mb-1 text-center">Front Camera</p>
+                      <img 
+                        src={bill.frontImage} 
+                        alt="Front view" 
+                        className="w-full border border-gray-300 rounded"
+                      />
+                    </div>
+                  )}
+                  {bill.rearImage && (
+                    <div>
+                      <p className="text-xs text-gray-500 mb-1 text-center">Rear Camera</p>
+                      <img 
+                        src={bill.rearImage} 
+                        alt="Rear view" 
+                        className="w-full border border-gray-300 rounded"
+                      />
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+            
+            {/* Backward compatibility for old bills */}
+            {!bill.frontImage && !bill.rearImage && bill.capturedImage && (
               <div className="mt-6">
                 <p className="text-sm text-gray-600 mb-2">Captured Image:</p>
                 <img 
