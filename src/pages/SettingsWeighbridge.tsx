@@ -1,201 +1,184 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Save, Wifi, WifiOff, TestTube2 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Switch } from '@/components/ui/switch';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
+import { getApiBaseUrl, setApiBaseUrl } from '@/config/api';
+import { testApiConnection } from '@/services/apiClient';
+import { saveCameraConfig } from '@/services/cameraService';
 
 export default function SettingsWeighbridge() {
   const { toast } = useToast();
-  const [indicatorPort, setIndicatorPort] = useState('COM3');
-  const [indicatorBaudRate, setIndicatorBaudRate] = useState('9600');
-  const [cameraIp, setCameraIp] = useState('192.168.1.100');
-  const [cameraPort, setCameraPort] = useState('8080');
-  const [autoCapture, setAutoCapture] = useState(true);
-  const [indicatorStatus, setIndicatorStatus] = useState<'online' | 'offline'>('online');
-  const [cameraStatus, setCameraStatus] = useState<'online' | 'offline'>('offline');
+  const [apiBaseUrl, setApiBaseUrlState] = useState(getApiBaseUrl());
+  const [apiStatus, setApiStatus] = useState<'online' | 'offline'>('offline');
+  
+  // Camera configuration
+  const [frontCameraIp, setFrontCameraIp] = useState('');
+  const [frontUsername, setFrontUsername] = useState('admin');
+  const [frontPassword, setFrontPassword] = useState('');
+  const [rearCameraIp, setRearCameraIp] = useState('');
+  const [rearUsername, setRearUsername] = useState('admin');
+  const [rearPassword, setRearPassword] = useState('');
+  const [cameraBrand, setCameraBrand] = useState('hikvision');
 
-  const handleTestIndicator = () => {
-    toast({
-      title: "Testing Indicator Connection",
-      description: "Attempting to connect to weighbridge indicator...",
-    });
-    
-    // Simulate connection test
-    setTimeout(() => {
-      const isOnline = Math.random() > 0.3;
-      setIndicatorStatus(isOnline ? 'online' : 'offline');
-      toast({
-        title: isOnline ? "Connection Successful" : "Connection Failed",
-        description: isOnline 
-          ? "Weighbridge indicator is responding correctly" 
-          : "Unable to connect to weighbridge indicator",
-        variant: isOnline ? "default" : "destructive",
-      });
-    }, 1500);
+  useEffect(() => {
+    handleTestApi();
+  }, []);
+
+  const handleTestApi = async () => {
+    const isConnected = await testApiConnection();
+    setApiStatus(isConnected ? 'online' : 'offline');
   };
 
-  const handleTestCamera = () => {
+  const handleSaveApiUrl = () => {
+    setApiBaseUrl(apiBaseUrl);
     toast({
-      title: "Testing Camera Connection",
-      description: "Attempting to connect to camera...",
+      title: "API URL Saved",
+      description: "Spring Boot backend URL updated",
     });
-    
-    // Simulate connection test
-    setTimeout(() => {
-      const isOnline = Math.random() > 0.3;
-      setCameraStatus(isOnline ? 'online' : 'offline');
-      toast({
-        title: isOnline ? "Connection Successful" : "Connection Failed",
-        description: isOnline 
-          ? "Camera is responding correctly" 
-          : "Unable to connect to camera",
-        variant: isOnline ? "default" : "destructive",
-      });
-    }, 1500);
+    handleTestApi();
   };
 
-  const handleSave = () => {
-    toast({
-      title: "Settings Saved",
-      description: "Weighbridge configuration has been updated successfully",
+  const handleSaveCameraConfig = async () => {
+    const result = await saveCameraConfig({
+      frontIp: frontCameraIp,
+      frontUsername,
+      frontPassword,
+      rearIp: rearCameraIp,
+      rearUsername,
+      rearPassword,
+      brand: cameraBrand
     });
+
+    if (result.success) {
+      toast({
+        title: "Camera Configuration Saved",
+        description: "CCTV camera settings updated successfully",
+      });
+    } else {
+      toast({
+        title: "Save Failed",
+        description: result.error || "Failed to save camera configuration",
+        variant: "destructive"
+      });
+    }
   };
 
   return (
     <div className="space-y-6">
       <div>
         <h1 className="text-3xl font-bold">Weighbridge Setup</h1>
-        <p className="text-muted-foreground">Configure hardware devices and connections</p>
+        <p className="text-muted-foreground">Configure backend API and camera connections</p>
       </div>
 
-      {/* Weighbridge Indicator */}
-      <Card className="card-shadow">
+      {/* API Configuration */}
+      <Card>
         <CardHeader>
           <div className="flex items-center justify-between">
-            <CardTitle>Weighbridge Indicator</CardTitle>
+            <CardTitle>Spring Boot Backend API</CardTitle>
             <div className="flex items-center gap-2">
-              {indicatorStatus === 'online' ? (
+              {apiStatus === 'online' ? (
                 <div className="flex items-center gap-2 text-green-500">
                   <Wifi className="h-4 w-4" />
-                  <span className="text-sm font-medium">Online</span>
+                  <span className="text-sm font-medium">Connected</span>
                 </div>
               ) : (
                 <div className="flex items-center gap-2 text-destructive">
                   <WifiOff className="h-4 w-4" />
-                  <span className="text-sm font-medium">Offline</span>
+                  <span className="text-sm font-medium">Disconnected</span>
                 </div>
               )}
             </div>
           </div>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="indicator-port">COM Port</Label>
-              <Input
-                id="indicator-port"
-                value={indicatorPort}
-                onChange={(e) => setIndicatorPort(e.target.value)}
-                placeholder="e.g., COM3"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="baud-rate">Baud Rate</Label>
-              <Input
-                id="baud-rate"
-                value={indicatorBaudRate}
-                onChange={(e) => setIndicatorBaudRate(e.target.value)}
-                placeholder="e.g., 9600"
-              />
-            </div>
+          <div className="space-y-2">
+            <Label htmlFor="api-url">API Base URL</Label>
+            <Input
+              id="api-url"
+              value={apiBaseUrl}
+              onChange={(e) => setApiBaseUrlState(e.target.value)}
+              placeholder="http://localhost:8080"
+            />
           </div>
-          <Button onClick={handleTestIndicator} variant="outline" className="w-full">
-            <TestTube2 className="mr-2 h-4 w-4" />
-            Test Connection
-          </Button>
+          <div className="flex gap-2">
+            <Button onClick={handleTestApi} variant="outline" className="flex-1">
+              <TestTube2 className="mr-2 h-4 w-4" />
+              Test Connection
+            </Button>
+            <Button onClick={handleSaveApiUrl} className="flex-1">
+              <Save className="mr-2 h-4 w-4" />
+              Save
+            </Button>
+          </div>
         </CardContent>
       </Card>
 
       {/* Camera Configuration */}
-      <Card className="card-shadow">
+      <Card>
         <CardHeader>
-          <div className="flex items-center justify-between">
-            <CardTitle>Camera Configuration</CardTitle>
-            <div className="flex items-center gap-2">
-              {cameraStatus === 'online' ? (
-                <div className="flex items-center gap-2 text-green-500">
-                  <Wifi className="h-4 w-4" />
-                  <span className="text-sm font-medium">Online</span>
-                </div>
-              ) : (
-                <div className="flex items-center gap-2 text-destructive">
-                  <WifiOff className="h-4 w-4" />
-                  <span className="text-sm font-medium">Offline</span>
-                </div>
-              )}
-            </div>
-          </div>
+          <CardTitle>CCTV Camera Configuration</CardTitle>
         </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="camera-ip">Camera IP Address</Label>
-              <Input
-                id="camera-ip"
-                value={cameraIp}
-                onChange={(e) => setCameraIp(e.target.value)}
-                placeholder="e.g., 192.168.1.100"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="camera-port">Camera Port</Label>
-              <Input
-                id="camera-port"
-                value={cameraPort}
-                onChange={(e) => setCameraPort(e.target.value)}
-                placeholder="e.g., 8080"
-              />
+        <CardContent className="space-y-6">
+          <div className="space-y-2">
+            <Label>Camera Brand</Label>
+            <Select value={cameraBrand} onValueChange={setCameraBrand}>
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="hikvision">HikVision</SelectItem>
+                <SelectItem value="dahua">Dahua</SelectItem>
+                <SelectItem value="cpplus">CP Plus</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="space-y-4">
+            <h3 className="font-semibold">Front Camera</h3>
+            <div className="grid grid-cols-3 gap-4">
+              <div className="space-y-2">
+                <Label>IP Address</Label>
+                <Input value={frontCameraIp} onChange={(e) => setFrontCameraIp(e.target.value)} placeholder="192.168.1.100" />
+              </div>
+              <div className="space-y-2">
+                <Label>Username</Label>
+                <Input value={frontUsername} onChange={(e) => setFrontUsername(e.target.value)} />
+              </div>
+              <div className="space-y-2">
+                <Label>Password</Label>
+                <Input type="password" value={frontPassword} onChange={(e) => setFrontPassword(e.target.value)} />
+              </div>
             </div>
           </div>
-          <Button onClick={handleTestCamera} variant="outline" className="w-full">
-            <TestTube2 className="mr-2 h-4 w-4" />
-            Test Connection
+
+          <div className="space-y-4">
+            <h3 className="font-semibold">Rear Camera</h3>
+            <div className="grid grid-cols-3 gap-4">
+              <div className="space-y-2">
+                <Label>IP Address</Label>
+                <Input value={rearCameraIp} onChange={(e) => setRearCameraIp(e.target.value)} placeholder="192.168.1.101" />
+              </div>
+              <div className="space-y-2">
+                <Label>Username</Label>
+                <Input value={rearUsername} onChange={(e) => setRearUsername(e.target.value)} />
+              </div>
+              <div className="space-y-2">
+                <Label>Password</Label>
+                <Input type="password" value={rearPassword} onChange={(e) => setRearPassword(e.target.value)} />
+              </div>
+            </div>
+          </div>
+
+          <Button onClick={handleSaveCameraConfig} className="w-full">
+            <Save className="mr-2 h-4 w-4" />
+            Save Camera Configuration
           </Button>
         </CardContent>
       </Card>
-
-      {/* Auto-Capture Settings */}
-      <Card className="card-shadow">
-        <CardHeader>
-          <CardTitle>Capture Settings</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="flex items-center justify-between">
-            <div className="space-y-0.5">
-              <Label htmlFor="auto-capture">Auto-Capture on Stability</Label>
-              <p className="text-sm text-muted-foreground">
-                Automatically capture weight when reading becomes stable
-              </p>
-            </div>
-            <Switch
-              id="auto-capture"
-              checked={autoCapture}
-              onCheckedChange={setAutoCapture}
-            />
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Save Button */}
-      <div className="flex justify-end">
-        <Button onClick={handleSave} size="lg">
-          <Save className="mr-2 h-4 w-4" />
-          Save Configuration
-        </Button>
-      </div>
     </div>
   );
 }

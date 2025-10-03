@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Printer } from 'lucide-react';
+import { Printer, Loader2 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -19,20 +19,24 @@ import BillPrintView from './BillPrintView';
 import DualCameraFeed from './DualCameraFeed';
 import { Bill, OpenTicket, OperationType } from '@/types/weighment';
 import { 
-  getNextSerialNo, 
-  updateSerialNo, 
   saveBill, 
+  updateBillStatus
+} from '@/services/api/billService';
+import { 
   saveOpenTicket, 
   getOpenTickets, 
   removeOpenTicket,
-  getOpenTicketById,
+  getOpenTicketById
+} from '@/services/api/openTicketService';
+import {
   getStoredTareByVehicle,
   getValidStoredTare,
   getTareExpiryInfo,
   isTareExpired,
-  saveStoredTare,
-  updateBillStatus
-} from '@/services/billService';
+  saveStoredTare
+} from '@/services/api/storedTareService';
+import { getNextSerialNo } from '@/services/api/masterDataService';
+import { captureBothCameras } from '@/services/cameraService';
 import { format } from 'date-fns';
 interface UnifiedWeighmentFormProps {
   liveWeight: number;
@@ -62,12 +66,16 @@ export default function UnifiedWeighmentForm({
   const [openTickets, setOpenTickets] = useState<OpenTicket[]>([]);
   const [manualTareEntry, setManualTareEntry] = useState(false);
   const [manualTareWeight, setManualTareWeight] = useState('');
+  const [isCapturing, setIsCapturing] = useState(false);
+  const [storedTare, setStoredTare] = useState<any>(null);
+  const [validTare, setValidTare] = useState<any>(null);
+  const [expiredTare, setExpiredTare] = useState<any>(null);
+  const [tareExpiryInfo, setTareExpiryInfo] = useState<any>(null);
   const { toast } = useToast();
 
   // Initialize serial number and load open tickets
   useEffect(() => {
-    setSerialNo(getNextSerialNo());
-    loadOpenTickets();
+    initializeData();
 
     // Update date/time every second
     const timer = setInterval(() => {
@@ -86,10 +94,36 @@ export default function UnifiedWeighmentForm({
     }
   }, [operationType]);
 
-  const loadOpenTickets = () => {
-    const tickets = getOpenTickets();
+  // Load tare info when vehicle number changes
+  useEffect(() => {
+    if (vehicleNo && operationType === 'stored-tare') {
+      loadTareInfo();
+    }
+  }, [vehicleNo, operationType]);
+
+  const initializeData = async () => {
+    const nextSerial = await getNextSerialNo();
+    setSerialNo(nextSerial);
+    loadOpenTickets();
+  };
+
+  const loadOpenTickets = async () => {
+    const tickets = await getOpenTickets();
     setOpenTickets(tickets);
-    console.log('Loaded open tickets:', tickets); // Debug log
+  };
+
+  const loadTareInfo = async () => {
+    if (!vehicleNo) return;
+    
+    const stored = await getStoredTareByVehicle(vehicleNo);
+    const valid = await getValidStoredTare(vehicleNo);
+    const expired = stored && !valid ? stored : null;
+    const expiryInfo = valid ? await getTareExpiryInfo(vehicleNo) : null;
+
+    setStoredTare(stored);
+    setValidTare(valid);
+    setExpiredTare(expired);
+    setTareExpiryInfo(expiryInfo);
   };
 
   const handleDualCameraCapture = (frontImage: string | null, rearImage: string | null) => {
@@ -105,7 +139,7 @@ export default function UnifiedWeighmentForm({
     setCapturedRearImage(null);
   };
 
-  const handleCapture = () => {
+  const handleCapture = async () => {
     if (!isStable) {
       toast({
         title: "Weight Not Stable",
@@ -113,6 +147,38 @@ export default function UnifiedWeighmentForm({
         variant: "destructive"
       });
       return;
+    }
+
+    setIsCapturing(true);
+
+    // Auto-capture from CCTV cameras
+    toast({
+      title: "Capturing Images",
+      description: "Fetching snapshots from CCTV cameras...",
+    });
+
+    const { frontImage, rearImage, error } = await captureBothCameras();
+    
+    if (error && !frontImage && !rearImage) {
+      toast({
+        title: "Camera Capture Failed",
+        description: error,
+        variant: "destructive"
+      });
+      setIsCapturing(false);
+      return;
+    }
+
+    // Update captured images
+    if (frontImage) setCapturedFrontImage(frontImage);
+    if (rearImage) setCapturedRearImage(rearImage);
+
+    if (error) {
+      toast({
+        title: "Partial Capture",
+        description: error,
+        variant: "default"
+      });
     }
 
     const chargesAmount = charges ? parseFloat(charges) : 0;
@@ -195,9 +261,9 @@ export default function UnifiedWeighmentForm({
           tareWeight: 0,
           netWeight: liveWeight,
           charges: chargesAmount,
-          capturedImage: capturedFrontImage || capturedRearImage,
-          frontImage: capturedFrontImage,
-          rearImage: capturedRearImage,
+          capturedImage: frontImage || rearImage,
+          frontImage: frontImage,
+          rearImage: rearImage,
           status: 'CLOSED',
           createdAt: timestamp,
           updatedAt: timestamp,
@@ -205,7 +271,18 @@ export default function UnifiedWeighmentForm({
           firstWeightType: 'one-time'
         };
 
-        saveBill(bill);
+        const result = await saveBill(bill);
+
+        if (result.error) {
+          toast({
+            title: "Save Failed",
+            description: result.error,
+            variant: "destructive"
+          });
+          setIsCapturing(false);
+          return;
+        }
+
         setBillToPrint(bill);
         
         toast({
@@ -223,11 +300,15 @@ export default function UnifiedWeighmentForm({
           description: "Please select an open ticket to update",
           variant: "destructive"
         });
+        setIsCapturing(false);
         return;
       }
 
-      const ticket = getOpenTicketById(selectedTicket);
-      if (!ticket) return;
+      const ticket = await getOpenTicketById(selectedTicket);
+      if (!ticket) {
+        setIsCapturing(false);
+        return;
+      }
 
       let netWeight: number;
       let grossWeight: number;
@@ -259,9 +340,9 @@ export default function UnifiedWeighmentForm({
         tareWeight,
         netWeight,
         charges: ticket.charges,
-        capturedImage: capturedFrontImage || capturedRearImage || ticket.capturedImage,
-        frontImage: capturedFrontImage || ticket.frontImage,
-        rearImage: capturedRearImage || ticket.rearImage,
+        capturedImage: frontImage || rearImage || ticket.capturedImage,
+        frontImage: frontImage || ticket.frontImage,
+        rearImage: rearImage || ticket.rearImage,
         status: 'CLOSED',
         createdAt: timestamp,
         updatedAt: timestamp,
@@ -272,9 +353,20 @@ export default function UnifiedWeighmentForm({
         secondWeightTimestamp
       };
 
-      saveBill(bill);
-      removeOpenTicket(selectedTicket);
-      loadOpenTickets(); // Refresh the open tickets list
+      const billResult = await saveBill(bill);
+      const removeResult = await removeOpenTicket(selectedTicket);
+
+      if (billResult.error || removeResult.error) {
+        toast({
+          title: "Save Failed",
+          description: billResult.error || removeResult.error || "Failed to close ticket",
+          variant: "destructive"
+        });
+        setIsCapturing(false);
+        return;
+      }
+
+      await loadOpenTickets(); // Refresh the open tickets list
       setBillToPrint(bill);
 
       toast({
@@ -291,11 +383,9 @@ export default function UnifiedWeighmentForm({
           description: "Please enter vehicle number",
           variant: "destructive"
         });
+        setIsCapturing(false);
         return;
       }
-
-      const validTare = getValidStoredTare(vehicleNo);
-      const expiredTare = !validTare ? getStoredTareByVehicle(vehicleNo) : null;
 
       // Mode 1: Store/Update Tare (when manual entry is active or no valid tare exists)
       if (manualTareEntry || (!validTare && !partyName && !productName)) {
@@ -303,12 +393,22 @@ export default function UnifiedWeighmentForm({
           ? parseFloat(manualTareWeight) 
           : liveWeight;
 
-        saveStoredTare({
+        const result = await saveStoredTare({
           vehicleNo,
           tareWeight: tareToStore,
           storedAt: expiredTare ? expiredTare.storedAt : timestamp,
           updatedAt: timestamp
         });
+
+        if (result.error) {
+          toast({
+            title: "Save Failed",
+            description: result.error,
+            variant: "destructive"
+          });
+          setIsCapturing(false);
+          return;
+        }
 
         setManualTareEntry(false);
         setManualTareWeight('');
@@ -317,6 +417,7 @@ export default function UnifiedWeighmentForm({
           title: expiredTare ? "Tare Weight Updated" : "Tare Weight Stored",
           description: `Tare ${tareToStore.toLocaleString()} KG ${expiredTare ? 'updated' : 'stored'} for ${vehicleNo}. Valid for 2 days.`
         });
+        setIsCapturing(false);
         return;
       }
 
@@ -328,6 +429,7 @@ export default function UnifiedWeighmentForm({
             description: "Please fill in party and product details",
             variant: "destructive"
           });
+          setIsCapturing(false);
           return;
         }
 
@@ -345,9 +447,9 @@ export default function UnifiedWeighmentForm({
           tareWeight: validTare.tareWeight,
           netWeight,
           charges: chargesAmount,
-          capturedImage: capturedFrontImage || capturedRearImage,
-          frontImage: capturedFrontImage,
-          rearImage: capturedRearImage,
+          capturedImage: frontImage || rearImage,
+          frontImage: frontImage,
+          rearImage: rearImage,
           status: 'CLOSED',
           createdAt: timestamp,
           updatedAt: timestamp,
@@ -355,7 +457,18 @@ export default function UnifiedWeighmentForm({
           firstWeightType: 'gross'
         };
 
-        saveBill(bill);
+        const result = await saveBill(bill);
+
+        if (result.error) {
+          toast({
+            title: "Save Failed",
+            description: result.error,
+            variant: "destructive"
+          });
+          setIsCapturing(false);
+          return;
+        }
+
         setBillToPrint(bill);
 
         toast({
@@ -365,9 +478,9 @@ export default function UnifiedWeighmentForm({
       }
     }
 
-    // Update serial number and reset form
-    updateSerialNo(serialNo);
-    setSerialNo(getNextSerialNo());
+    // Reset form after successful capture
+    const nextSerial = await getNextSerialNo();
+    setSerialNo(nextSerial);
     setVehicleNo('');
     setPartyName('');
     setProductName('');
@@ -378,12 +491,13 @@ export default function UnifiedWeighmentForm({
     setCapturedRearImage(null);
     setManualTareEntry(false);
     setManualTareWeight('');
+    setIsCapturing(false);
   };
   // Update form fields when ticket is selected
-  const handleTicketSelect = (ticketId: string) => {
+  const handleTicketSelect = async (ticketId: string) => {
     setSelectedTicket(ticketId);
     setTicketSearchOpen(false);
-    const ticket = getOpenTicketById(ticketId);
+    const ticket = await getOpenTicketById(ticketId);
     if (ticket) {
       setVehicleNo(ticket.vehicleNo);
       setPartyName(ticket.partyName);
@@ -394,13 +508,8 @@ export default function UnifiedWeighmentForm({
     }
   };
 
-  const storedTare = vehicleNo ? getStoredTareByVehicle(vehicleNo) : null;
-  const validTare = vehicleNo ? getValidStoredTare(vehicleNo) : null;
-  const expiredTare = storedTare && !validTare ? storedTare : null;
-  const tareExpiryInfo = validTare ? getTareExpiryInfo(validTare) : null;
-
-  const handlePrintComplete = (bill: Bill) => {
-    updateBillStatus(bill.id, 'PRINTED');
+  const handlePrintComplete = async (bill: Bill) => {
+    await updateBillStatus(bill.id, 'PRINTED');
     setBillToPrint(null);
     toast({
       title: "Bill Status Updated",
@@ -713,9 +822,9 @@ export default function UnifiedWeighmentForm({
                   )}
                 </div>
 
-                {selectedTicket && <div className="space-y-3">
+                {selectedTicket && openTickets.find(t => t.id === selectedTicket) && <div className="space-y-3">
                     {(() => {
-                const ticket = getOpenTicketById(selectedTicket);
+                const ticket = openTickets.find(t => t.id === selectedTicket);
                 return ticket ? <>
                           <div className="p-4 bg-muted rounded-lg space-y-2">
                             <div className="flex justify-between text-sm">
@@ -1114,14 +1223,18 @@ export default function UnifiedWeighmentForm({
               </div>
 
             {/* Capture Button */}
-            <Button onClick={handleCapture} disabled={!isStable || !serialNo || operationType === 'new' && (!vehicleNo || !partyName || !productName) || operationType === 'update' && !selectedTicket || operationType === 'stored-tare' && (!vehicleNo || validTare && (!partyName || !productName))} className="w-full">
-                <Check className="mr-2 h-4 w-4" />
-                {operationType === 'new' && weightType === 'gross' && 'Capture Gross Weight'}
-                {operationType === 'new' && weightType === 'one-time' && 'Capture One-Time Weight'}
-                {operationType === 'update' && (() => {
-                  const ticket = getOpenTicketById(selectedTicket);
-                  return ticket?.firstWeightType === 'gross' ? 'Capture Tare & Close Ticket' : 'Capture Gross & Close Ticket';
-                })()}
+            <Button onClick={handleCapture} disabled={isCapturing || !isStable || !serialNo || operationType === 'new' && (!vehicleNo || !partyName || !productName) || operationType === 'update' && !selectedTicket || operationType === 'stored-tare' && (!vehicleNo || validTare && (!partyName || !productName))} className="w-full">
+                {isCapturing ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Check className="mr-2 h-4 w-4" />}
+                {isCapturing ? 'Capturing from CCTV...' : (
+                  <>
+                    {operationType === 'new' && weightType === 'gross' && 'Capture Gross Weight'}
+                    {operationType === 'new' && weightType === 'one-time' && 'Capture One-Time Weight'}
+                    {operationType === 'update' && (() => {
+                      const ticket = openTickets.find(t => t.id === selectedTicket);
+                      return ticket?.firstWeightType === 'gross' ? 'Capture Tare & Close Ticket' : 'Capture Gross & Close Ticket';
+                    })()}
+                  </>
+                )}
                 {operationType === 'stored-tare' && !validTare && !manualTareEntry && 'Capture & Store Tare'}
                 {operationType === 'stored-tare' && manualTareEntry && 'Save Manual Tare'}
                 {operationType === 'stored-tare' && validTare && 'Capture Gross & Generate Bill'}
