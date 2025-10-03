@@ -20,6 +20,7 @@ export interface Vehicle {
   capacity: number;
   ownerName: string;
   contactNo: string;
+  tareWeight?: number; // Optional: Default tare weight for regular vehicles
 }
 
 export interface Party {
@@ -91,6 +92,7 @@ export const mockVehicles: Vehicle[] = [
     capacity: 15000,
     ownerName: 'Rajesh Kumar',
     contactNo: '+91-9876543210',
+    tareWeight: 5000, // Pre-configured tare
   },
   {
     id: '2',
@@ -99,6 +101,7 @@ export const mockVehicles: Vehicle[] = [
     capacity: 12000,
     ownerName: 'Amit Sharma',
     contactNo: '+91-9876543211',
+    tareWeight: 4500, // Pre-configured tare
   },
   {
     id: '3',
@@ -107,6 +110,7 @@ export const mockVehicles: Vehicle[] = [
     capacity: 20000,
     ownerName: 'Priya Patel',
     contactNo: '+91-9876543212',
+    tareWeight: 6000, // Pre-configured tare
   },
 ];
 

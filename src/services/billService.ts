@@ -96,6 +96,50 @@ export const saveStoredTare = (tare: StoredTare): void => {
   localStorage.setItem(STORED_TARES_KEY, JSON.stringify(tares));
 };
 
+// Tare Expiry Validation (2-day validity)
+export const isTareExpired = (tare: StoredTare): boolean => {
+  const storedDate = new Date(tare.updatedAt);
+  const currentDate = new Date();
+  const daysDifference = Math.floor((currentDate.getTime() - storedDate.getTime()) / (1000 * 60 * 60 * 24));
+  return daysDifference > 2;
+};
+
+export const getValidStoredTare = (vehicleNo: string): StoredTare | null => {
+  const tare = getStoredTareByVehicle(vehicleNo);
+  
+  if (!tare) return null;
+  
+  if (isTareExpired(tare)) {
+    return null; // Tare expired
+  }
+  
+  return tare; // Tare is still valid
+};
+
+export const getTareExpiryInfo = (tare: StoredTare): { 
+  isExpired: boolean; 
+  daysRemaining: number;
+  expiryDate: string;
+  hoursRemaining: number;
+} => {
+  const storedDate = new Date(tare.updatedAt);
+  const currentDate = new Date();
+  const hoursDifference = Math.floor((currentDate.getTime() - storedDate.getTime()) / (1000 * 60 * 60));
+  const daysDifference = Math.floor(hoursDifference / 24);
+  const daysRemaining = 2 - daysDifference;
+  const hoursRemaining = (2 * 24) - hoursDifference;
+  
+  const expiryDate = new Date(storedDate);
+  expiryDate.setDate(expiryDate.getDate() + 2);
+  
+  return {
+    isExpired: daysDifference > 2,
+    daysRemaining: Math.max(0, daysRemaining),
+    hoursRemaining: Math.max(0, hoursRemaining),
+    expiryDate: expiryDate.toISOString()
+  };
+};
+
 // Serial Number Management
 export const getNextSerialNo = (): string => {
   const lastSerialNo = localStorage.getItem(SERIAL_NO_KEY);

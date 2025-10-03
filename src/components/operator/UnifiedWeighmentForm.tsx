@@ -4,6 +4,7 @@ import { Camera, X, Printer } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -25,9 +26,13 @@ import {
   removeOpenTicket,
   getOpenTicketById,
   getStoredTareByVehicle,
+  getValidStoredTare,
+  getTareExpiryInfo,
+  isTareExpired,
   saveStoredTare,
   updateBillStatus
 } from '@/services/billService';
+import { format } from 'date-fns';
 interface UnifiedWeighmentFormProps {
   liveWeight: number;
   isStable: boolean;
@@ -54,6 +59,8 @@ export default function UnifiedWeighmentForm({
   const [capturedImage, setCapturedImage] = useState<string | null>(null);
   const [billToPrint, setBillToPrint] = useState<Bill | null>(null);
   const [openTickets, setOpenTickets] = useState<OpenTicket[]>([]);
+  const [manualTareEntry, setManualTareEntry] = useState(false);
+  const [manualTareWeight, setManualTareWeight] = useState('');
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
@@ -354,23 +361,34 @@ export default function UnifiedWeighmentForm({
         return;
       }
 
-      const existingTare = getStoredTareByVehicle(vehicleNo);
+      const validTare = getValidStoredTare(vehicleNo);
+      const expiredTare = !validTare ? getStoredTareByVehicle(vehicleNo) : null;
 
-      if (!existingTare) {
-        // First time - Store tare weight
+      // Mode 1: Store/Update Tare (when manual entry is active or no valid tare exists)
+      if (manualTareEntry || (!validTare && !partyName && !productName)) {
+        const tareToStore = manualTareEntry && manualTareWeight 
+          ? parseFloat(manualTareWeight) 
+          : liveWeight;
+
         saveStoredTare({
           vehicleNo,
-          tareWeight: liveWeight,
-          storedAt: timestamp,
+          tareWeight: tareToStore,
+          storedAt: expiredTare ? expiredTare.storedAt : timestamp,
           updatedAt: timestamp
         });
 
+        setManualTareEntry(false);
+        setManualTareWeight('');
+
         toast({
-          title: "Tare Weight Stored",
-          description: `Base tare ${liveWeight.toLocaleString()} KG stored for ${vehicleNo}`
+          title: expiredTare ? "Tare Weight Updated" : "Tare Weight Stored",
+          description: `Tare ${tareToStore.toLocaleString()} KG ${expiredTare ? 'updated' : 'stored'} for ${vehicleNo}. Valid for 2 days.`
         });
-      } else {
-        // Subsequent trips - Use stored tare
+        return;
+      }
+
+      // Mode 2: Generate Bill using valid tare
+      if (validTare) {
         if (!partyName || !productName) {
           toast({
             title: "Missing Information",
@@ -380,7 +398,7 @@ export default function UnifiedWeighmentForm({
           return;
         }
 
-        const netWeight = liveWeight - existingTare.tareWeight;
+        const netWeight = liveWeight - validTare.tareWeight;
         const billId = `BILL-${Date.now()}`;
 
         const bill: Bill = {
@@ -391,7 +409,7 @@ export default function UnifiedWeighmentForm({
           partyName,
           productName,
           grossWeight: liveWeight,
-          tareWeight: existingTare.tareWeight,
+          tareWeight: validTare.tareWeight,
           netWeight,
           charges: chargesAmount,
           capturedImage: finalCapturedImage,
@@ -407,7 +425,7 @@ export default function UnifiedWeighmentForm({
 
         toast({
           title: "Trip Completed",
-          description: `Net Weight: ${netWeight.toLocaleString()} KG (Stored Tare: ${existingTare.tareWeight.toLocaleString()} KG)`
+          description: `Net Weight: ${netWeight.toLocaleString()} KG (Stored Tare: ${validTare.tareWeight.toLocaleString()} KG)`
         });
       }
     }
@@ -422,6 +440,8 @@ export default function UnifiedWeighmentForm({
     setSelectedTicket('');
     setCharges('');
     setCapturedImage(null);
+    setManualTareEntry(false);
+    setManualTareWeight('');
   };
   // Update form fields when ticket is selected
   const handleTicketSelect = (ticketId: string) => {
@@ -439,6 +459,9 @@ export default function UnifiedWeighmentForm({
   };
 
   const storedTare = vehicleNo ? getStoredTareByVehicle(vehicleNo) : null;
+  const validTare = vehicleNo ? getValidStoredTare(vehicleNo) : null;
+  const expiredTare = storedTare && !validTare ? storedTare : null;
+  const tareExpiryInfo = validTare ? getTareExpiryInfo(validTare) : null;
 
   const handlePrintComplete = (bill: Bill) => {
     updateBillStatus(bill.id, 'PRINTED');
@@ -997,57 +1020,193 @@ export default function UnifiedWeighmentForm({
                   </Popover>
                 </div>
 
-                {storedTare && <div className="p-3 bg-primary/10 border border-primary/20 rounded-lg">
+                {/* Tare Status Display - Valid Tare */}
+                {validTare && tareExpiryInfo && (
+                  <div className="p-4 bg-success/10 border border-success/30 rounded-lg space-y-3">
                     <div className="flex items-center justify-between">
-                      <span className="text-sm font-medium">Stored Tare for {vehicleNo}:</span>
-                      <span className="font-mono font-bold text-primary">{storedTare.tareWeight} kg</span>
+                      <div className="flex items-center gap-2">
+                        <Badge variant="default" className="bg-success text-success-foreground">Valid Tare</Badge>
+                        <span className="text-sm font-medium">for {vehicleNo}</span>
+                      </div>
+                      <span className="font-mono font-bold text-xl">{validTare.tareWeight.toLocaleString()} KG</span>
                     </div>
-                  </div>}
+                    <div className="flex items-center justify-between text-sm">
+                      <span className="text-muted-foreground">
+                        Recorded: {format(new Date(validTare.updatedAt), 'dd MMM yyyy, hh:mm a')}
+                      </span>
+                      <span className="font-medium text-success">
+                        Expires in {tareExpiryInfo.hoursRemaining < 24 
+                          ? `${tareExpiryInfo.hoursRemaining}h` 
+                          : `${tareExpiryInfo.daysRemaining} day${tareExpiryInfo.daysRemaining !== 1 ? 's' : ''}`}
+                      </span>
+                    </div>
+                    {!partyName && !productName && (
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        className="w-full"
+                        onClick={() => setManualTareEntry(true)}
+                      >
+                        Update Tare Weight
+                      </Button>
+                    )}
+                  </div>
+                )}
 
-                {!storedTare && vehicleNo && <div className="p-3 bg-warning/10 border border-warning/20 rounded-lg">
-                    <p className="text-sm text-warning">No stored tare found. Capture empty weight to set base tare.</p>
-                  </div>}
+                {/* Tare Status Display - Expired Tare */}
+                {expiredTare && (
+                  <Alert variant="destructive" className="bg-destructive/10">
+                    <AlertDescription>
+                      <div className="space-y-3">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2">
+                            <Badge variant="destructive">Tare Expired</Badge>
+                            <span className="text-sm font-medium">for {vehicleNo}</span>
+                          </div>
+                        </div>
+                        <div className="text-sm space-y-1">
+                          <div className="flex justify-between">
+                            <span className="text-muted-foreground">Last Tare:</span>
+                            <span className="font-mono font-semibold">{expiredTare.tareWeight.toLocaleString()} KG</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="text-muted-foreground">Recorded:</span>
+                            <span>{format(new Date(expiredTare.updatedAt), 'dd MMM yyyy')}</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="text-muted-foreground">Expired:</span>
+                            <span className="text-destructive font-medium">
+                              {format(new Date(new Date(expiredTare.updatedAt).getTime() + 2 * 24 * 60 * 60 * 1000), 'dd MMM yyyy')}
+                            </span>
+                          </div>
+                        </div>
+                        <Button 
+                          variant="default" 
+                          size="sm" 
+                          className="w-full"
+                          onClick={() => {
+                            setManualTareEntry(false);
+                            setPartyName('');
+                            setProductName('');
+                          }}
+                        >
+                          Weigh Empty Vehicle Now
+                        </Button>
+                      </div>
+                    </AlertDescription>
+                  </Alert>
+                )}
 
-                <div className="space-y-2">
-                  <Label htmlFor="shuttle-party">Party Name</Label>
-                  <Input id="shuttle-party" type="text" value={partyName} onChange={e => setPartyName(e.target.value.toUpperCase())} placeholder="Type or select party name" list="shuttle-party-list" />
-                  <datalist id="shuttle-party-list">
-                    {mockParties.map(party => <option key={party.id} value={party.partyName} />)}
-                  </datalist>
-                </div>
+                {/* No Tare Found */}
+                {!validTare && !expiredTare && vehicleNo && (
+                  <Alert className="bg-warning/10 border-warning/30">
+                    <AlertDescription>
+                      <div className="space-y-3">
+                        <p className="text-sm font-medium">No stored tare found for {vehicleNo}</p>
+                        <div className="flex gap-2">
+                          <Button 
+                            variant="default" 
+                            size="sm" 
+                            className="flex-1"
+                            onClick={() => {
+                              setManualTareEntry(false);
+                              setPartyName('');
+                              setProductName('');
+                            }}
+                          >
+                            Weigh Empty Vehicle
+                          </Button>
+                          <Button 
+                            variant="outline" 
+                            size="sm" 
+                            className="flex-1"
+                            onClick={() => setManualTareEntry(true)}
+                          >
+                            Enter Manually
+                          </Button>
+                        </div>
+                      </div>
+                    </AlertDescription>
+                  </Alert>
+                )}
 
-                <div className="space-y-2">
-                  <Label htmlFor="shuttle-product">Product</Label>
-                  <Select value={productName} onValueChange={setProductName}>
-                    <SelectTrigger id="shuttle-product">
-                      <SelectValue placeholder="Select product" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {mockProducts.map(product => <SelectItem key={product.id} value={product.productName}>
-                          {product.productName}
-                        </SelectItem>)}
-                    </SelectContent>
-                  </Select>
-                </div>
+                {/* Manual Tare Entry */}
+                {manualTareEntry && (
+                  <div className="p-4 bg-muted rounded-lg space-y-3">
+                    <div className="flex items-center justify-between">
+                      <Label htmlFor="manual-tare">Manual Tare Weight (KG)</Label>
+                      <Button 
+                        variant="ghost" 
+                        size="sm"
+                        onClick={() => {
+                          setManualTareEntry(false);
+                          setManualTareWeight('');
+                        }}
+                      >
+                        Cancel
+                      </Button>
+                    </div>
+                    <Input
+                      id="manual-tare"
+                      type="number"
+                      value={manualTareWeight}
+                      onChange={(e) => setManualTareWeight(e.target.value)}
+                      placeholder="Enter tare weight"
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      Or capture current live weight: {liveWeight.toLocaleString()} KG
+                    </p>
+                  </div>
+                )}
 
-                {storedTare && <div className="p-4 bg-muted rounded-lg space-y-2">
+                {/* Party and Product fields - Only show when tare is ready */}
+                {(validTare || manualTareEntry) && (
+                  <>
+                    <div className="space-y-2">
+                      <Label htmlFor="shuttle-party">Party Name</Label>
+                      <Input id="shuttle-party" type="text" value={partyName} onChange={e => setPartyName(e.target.value.toUpperCase())} placeholder="Type or select party name" list="shuttle-party-list" />
+                      <datalist id="shuttle-party-list">
+                        {mockParties.map(party => <option key={party.id} value={party.partyName} />)}
+                      </datalist>
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="shuttle-product">Product</Label>
+                      <Select value={productName} onValueChange={setProductName}>
+                        <SelectTrigger id="shuttle-product">
+                          <SelectValue placeholder="Select product" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {mockProducts.map(product => <SelectItem key={product.id} value={product.productName}>
+                              {product.productName}
+                            </SelectItem>)}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </>
+                )}
+
+                {/* Net Weight Preview - Only when valid tare exists */}
+                {validTare && partyName && productName && (
+                  <div className="p-4 bg-muted rounded-lg space-y-2">
                     <div className="flex justify-between text-sm">
                       <span className="text-muted-foreground">Current Gross:</span>
-                      <span className="font-mono font-bold">{liveWeight} kg</span>
+                      <span className="font-mono font-bold">{liveWeight.toLocaleString()} KG</span>
                     </div>
                     <div className="flex justify-between text-sm">
                       <span className="text-muted-foreground">Stored Tare:</span>
-                      <span className="font-mono font-bold">{storedTare.tareWeight} kg</span>
+                      <span className="font-mono font-bold">{validTare.tareWeight.toLocaleString()} KG</span>
                     </div>
-                    <div className="flex justify-between text-sm">
-                      <span className="text-muted-foreground">Net Weight:</span>
-                      <span className="font-mono font-bold text-primary">{liveWeight - storedTare.tareWeight} kg</span>
+                    <div className="flex justify-between text-sm border-t pt-2">
+                      <span className="text-muted-foreground font-semibold">Net Weight:</span>
+                      <span className="font-mono font-bold text-primary text-lg">{(liveWeight - validTare.tareWeight).toLocaleString()} KG</span>
                     </div>
-                  </div>}
+                  </div>
+                )}
               </>}
 
             {/* Weight Status Display */}
-            {operationType !== 'update' && <div className="p-4 bg-muted rounded-lg space-y-2">
+            {operationType !== 'update' && operationType !== 'stored-tare' && <div className="p-4 bg-muted rounded-lg space-y-2">
                 <div className="flex justify-between text-sm">
                   <span className="text-muted-foreground">Current Weight:</span>
                   <span className="font-mono font-bold">{liveWeight} kg</span>
@@ -1076,7 +1235,7 @@ export default function UnifiedWeighmentForm({
               </div>
 
             {/* Capture Button */}
-            <Button onClick={handleCapture} disabled={!isStable || !serialNo || operationType === 'new' && (!vehicleNo || !partyName || !productName) || operationType === 'update' && !selectedTicket || operationType === 'stored-tare' && (!vehicleNo || !partyName || !productName)} className="w-full">
+            <Button onClick={handleCapture} disabled={!isStable || !serialNo || operationType === 'new' && (!vehicleNo || !partyName || !productName) || operationType === 'update' && !selectedTicket || operationType === 'stored-tare' && (!vehicleNo || validTare && (!partyName || !productName))} className="w-full">
                 <Check className="mr-2 h-4 w-4" />
                 {operationType === 'new' && weightType === 'gross' && 'Capture Gross Weight'}
                 {operationType === 'new' && weightType === 'one-time' && 'Capture One-Time Weight'}
@@ -1084,8 +1243,9 @@ export default function UnifiedWeighmentForm({
                   const ticket = getOpenTicketById(selectedTicket);
                   return ticket?.firstWeightType === 'gross' ? 'Capture Tare & Close Ticket' : 'Capture Gross & Close Ticket';
                 })()}
-                {operationType === 'stored-tare' && !storedTare && 'Capture & Store Base Tare'}
-                {operationType === 'stored-tare' && storedTare && 'Capture Gross & Log Trip'}
+                {operationType === 'stored-tare' && !validTare && !manualTareEntry && 'Capture & Store Tare'}
+                {operationType === 'stored-tare' && manualTareEntry && 'Save Manual Tare'}
+                {operationType === 'stored-tare' && validTare && 'Capture Gross & Generate Bill'}
               </Button>
           </CardContent>
         </Card>
