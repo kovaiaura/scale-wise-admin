@@ -6,6 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useToast } from '@/hooks/use-toast';
 import { getApiBaseUrl, setApiBaseUrl } from '@/config/api';
 import { testApiConnection } from '@/services/apiClient';
@@ -27,6 +28,12 @@ export default function SettingsWeighbridge() {
   const [cameraEnabledByDefault, setCameraEnabledByDefault] = useState(() => {
     const saved = localStorage.getItem('cameraEnabledByDefault');
     return saved !== null ? JSON.parse(saved) : true;
+  });
+
+  // Development Mode State
+  const [developmentMode, setDevelopmentMode] = useState(() => {
+    const saved = localStorage.getItem('developmentMode');
+    return saved !== null ? JSON.parse(saved) : false;
   });
 
   useEffect(() => {
@@ -75,12 +82,62 @@ export default function SettingsWeighbridge() {
     }
   };
 
+  const handleToggleDevelopmentMode = (enabled: boolean) => {
+    setDevelopmentMode(enabled);
+    localStorage.setItem('developmentMode', JSON.stringify(enabled));
+    
+    toast({
+      title: enabled ? "Development Mode Enabled" : "Development Mode Disabled",
+      description: enabled 
+        ? "Using localStorage for data storage. No backend required." 
+        : "Using Spring Boot API. Backend connection required.",
+    });
+  };
+
   return (
     <div className="space-y-6">
       <div>
         <h1 className="text-3xl font-bold">Weighbridge Setup</h1>
         <p className="text-muted-foreground">Configure backend API and camera connections</p>
       </div>
+
+      {/* Development Mode Toggle */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Development Mode</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="flex items-center justify-between">
+            <div className="space-y-1">
+              <Label>Enable Development Mode</Label>
+              <p className="text-sm text-muted-foreground">
+                Test frontend UI without backend connection. Uses localStorage for data storage.
+              </p>
+            </div>
+            <Switch
+              checked={developmentMode}
+              onCheckedChange={handleToggleDevelopmentMode}
+            />
+          </div>
+          
+          {developmentMode && (
+            <Alert>
+              <AlertDescription>
+                Development mode is active. All data is stored locally in your browser. 
+                Backend API calls are bypassed.
+              </AlertDescription>
+            </Alert>
+          )}
+
+          {!developmentMode && (
+            <Alert variant="destructive">
+              <AlertDescription>
+                Production mode requires Spring Boot backend running on the configured API URL below.
+              </AlertDescription>
+            </Alert>
+          )}
+        </CardContent>
+      </Card>
 
       {/* API Configuration */}
       <Card>

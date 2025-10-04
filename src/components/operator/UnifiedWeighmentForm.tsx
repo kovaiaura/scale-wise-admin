@@ -21,23 +21,19 @@ import DualCameraFeed from './DualCameraFeed';
 import { Bill, OpenTicket, OperationType } from '@/types/weighment';
 import { 
   saveBill, 
-  updateBillStatus
-} from '@/services/api/billService';
-import { 
+  updateBillStatus,
   saveOpenTicket, 
   getOpenTickets, 
   removeOpenTicket,
-  getOpenTicketById
-} from '@/services/api/openTicketService';
-import {
+  getOpenTicketById,
   getStoredTareByVehicle,
   getValidStoredTare,
   getTareExpiryInfo,
   isTareExpired,
-  saveStoredTare
-} from '@/services/api/storedTareService';
-import { getNextSerialNo } from '@/services/api/masterDataService';
-import { captureBothCameras } from '@/services/cameraService';
+  saveStoredTare,
+  getNextSerialNo,
+  captureBothCameras
+} from '@/services/unifiedServices';
 import { format } from 'date-fns';
 interface UnifiedWeighmentFormProps {
   liveWeight: number;
