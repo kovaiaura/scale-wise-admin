@@ -4,6 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Switch } from '@/components/ui/switch';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
 import { getApiBaseUrl, setApiBaseUrl } from '@/config/api';
@@ -23,6 +24,10 @@ export default function SettingsWeighbridge() {
   const [rearUsername, setRearUsername] = useState('admin');
   const [rearPassword, setRearPassword] = useState('');
   const [cameraBrand, setCameraBrand] = useState('hikvision');
+  const [cameraEnabledByDefault, setCameraEnabledByDefault] = useState(() => {
+    const saved = localStorage.getItem('cameraEnabledByDefault');
+    return saved !== null ? JSON.parse(saved) : true;
+  });
 
   useEffect(() => {
     handleTestApi();
@@ -52,6 +57,9 @@ export default function SettingsWeighbridge() {
       rearPassword,
       brand: cameraBrand
     });
+
+    // Save camera default setting to localStorage
+    localStorage.setItem('cameraEnabledByDefault', JSON.stringify(cameraEnabledByDefault));
 
     if (result.success) {
       toast({
@@ -170,6 +178,24 @@ export default function SettingsWeighbridge() {
                 <Label>Password</Label>
                 <Input type="password" value={rearPassword} onChange={(e) => setRearPassword(e.target.value)} />
               </div>
+            </div>
+          </div>
+
+          <div className="space-y-3 pt-4 border-t">
+            <Label className="text-base font-semibold">Camera Capture Default</Label>
+            <div className="flex items-center justify-between p-4 bg-muted/50 rounded-lg">
+              <div>
+                <p className="text-sm font-medium">Enable Camera Capture by Default</p>
+                <p className="text-xs text-muted-foreground mt-1">
+                  {cameraEnabledByDefault 
+                    ? "Camera capture will be enabled for new weighments" 
+                    : "Camera capture will be disabled for new weighments"}
+                </p>
+              </div>
+              <Switch 
+                checked={cameraEnabledByDefault}
+                onCheckedChange={setCameraEnabledByDefault}
+              />
             </div>
           </div>
 

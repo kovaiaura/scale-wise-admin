@@ -1,10 +1,11 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Printer, Loader2 } from 'lucide-react';
+import { Printer, Loader2, Camera, CameraOff } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -71,6 +72,10 @@ export default function UnifiedWeighmentForm({
   const [validTare, setValidTare] = useState<any>(null);
   const [expiredTare, setExpiredTare] = useState<any>(null);
   const [tareExpiryInfo, setTareExpiryInfo] = useState<any>(null);
+  const [cameraEnabled, setCameraEnabled] = useState(() => {
+    const saved = localStorage.getItem('cameraEnabledByDefault');
+    return saved !== null ? JSON.parse(saved) : true;
+  });
   const { toast } = useToast();
 
   // Initialize serial number and load open tickets
@@ -151,34 +156,43 @@ export default function UnifiedWeighmentForm({
 
     setIsCapturing(true);
 
-    // Auto-capture from CCTV cameras
-    toast({
-      title: "Capturing Images",
-      description: "Fetching snapshots from CCTV cameras...",
-    });
+    let frontImage: string | null = null;
+    let rearImage: string | null = null;
 
-    const { frontImage, rearImage, error } = await captureBothCameras();
-    
-    if (error && !frontImage && !rearImage) {
+    // Auto-capture from CCTV cameras if enabled
+    if (cameraEnabled) {
       toast({
-        title: "Camera Capture Failed",
-        description: error,
-        variant: "destructive"
+        title: "Capturing Images",
+        description: "Fetching snapshots from CCTV cameras...",
       });
-      setIsCapturing(false);
-      return;
-    }
 
-    // Update captured images
-    if (frontImage) setCapturedFrontImage(frontImage);
-    if (rearImage) setCapturedRearImage(rearImage);
+      const cameraResult = await captureBothCameras();
+      frontImage = cameraResult.frontImage;
+      rearImage = cameraResult.rearImage;
+      
+      if (cameraResult.error && !frontImage && !rearImage) {
+        toast({
+          title: "Camera Capture Failed",
+          description: cameraResult.error + ". Proceeding without images.",
+          variant: "default"
+        });
+      } else {
+        // Update captured images
+        if (frontImage) setCapturedFrontImage(frontImage);
+        if (rearImage) setCapturedRearImage(rearImage);
 
-    if (error) {
-      toast({
-        title: "Partial Capture",
-        description: error,
-        variant: "default"
-      });
+        if (cameraResult.error) {
+          toast({
+            title: "Partial Capture",
+            description: cameraResult.error,
+            variant: "default"
+          });
+        }
+      }
+    } else {
+      // Skip camera capture
+      setCapturedFrontImage(null);
+      setCapturedRearImage(null);
     }
 
     const chargesAmount = charges ? parseFloat(charges) : 0;
@@ -1207,6 +1221,37 @@ export default function UnifiedWeighmentForm({
                 </div>
               </div>}
 
+            {/* Camera Toggle */}
+            <div className="space-y-3">
+              <div className="flex items-center justify-between p-4 bg-muted/50 rounded-lg border">
+                <div className="flex items-center gap-3">
+                  {cameraEnabled ? (
+                    <Camera className="h-5 w-5 text-primary" />
+                  ) : (
+                    <CameraOff className="h-5 w-5 text-muted-foreground" />
+                  )}
+                  <div>
+                    <Label className="text-sm font-semibold">Camera Capture</Label>
+                    <p className="text-xs text-muted-foreground">
+                      {cameraEnabled ? "Enabled - Images will be captured" : "Disabled - No images will be captured"}
+                    </p>
+                  </div>
+                </div>
+                <Switch 
+                  checked={cameraEnabled}
+                  onCheckedChange={setCameraEnabled}
+                />
+              </div>
+              
+              {!cameraEnabled && (
+                <Alert className="bg-warning/10 border-warning/30">
+                  <AlertDescription className="text-sm">
+                    Camera capture is disabled. Bills will be generated without images.
+                  </AlertDescription>
+                </Alert>
+              )}
+            </div>
+
             {/* Charges Field - Special Styling */}
             <div className="space-y-2">
                 <Label htmlFor="charges" className="text-base font-semibold">Charges</Label>
@@ -1282,17 +1327,31 @@ export default function UnifiedWeighmentForm({
           </CardContent>
         </Card>
 
-        <Card className="card-shadow">
-          <CardContent className="pt-6">
-            <DualCameraFeed
-              onCapture={handleDualCameraCapture}
-              capturedFrontImage={capturedFrontImage}
-              capturedRearImage={capturedRearImage}
-              onClearFront={clearFrontImage}
-              onClearRear={clearRearImage}
-            />
-          </CardContent>
-        </Card>
+        {cameraEnabled ? (
+          <Card className="card-shadow">
+            <CardContent className="pt-6">
+              <DualCameraFeed
+                onCapture={handleDualCameraCapture}
+                capturedFrontImage={capturedFrontImage}
+                capturedRearImage={capturedRearImage}
+                onClearFront={clearFrontImage}
+                onClearRear={clearRearImage}
+              />
+            </CardContent>
+          </Card>
+        ) : (
+          <Card className="card-shadow">
+            <CardContent className="pt-6">
+              <div className="flex flex-col items-center justify-center py-12 text-center">
+                <CameraOff className="h-16 w-16 text-muted-foreground mb-4" />
+                <h3 className="text-lg font-semibold mb-2">Camera Disabled</h3>
+                <p className="text-sm text-muted-foreground">
+                  Enable camera capture to take snapshots from CCTV cameras
+                </p>
+              </div>
+            </CardContent>
+          </Card>
+        )}
       </div>
     </div>;
 }
