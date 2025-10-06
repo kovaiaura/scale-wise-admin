@@ -54,9 +54,9 @@ export default function Dashboard() {
       bgColor: 'bg-success/10',
     },
     {
-      title: 'Active Vehicles',
-      value: mockDashboardStats.activeVehicles,
-      icon: Truck,
+      title: 'Monthly Amount',
+      value: `₹${mockDashboardStats.monthlyAmount.toLocaleString()}`,
+      icon: IndianRupee,
       color: 'text-warning',
       bgColor: 'bg-warning/10',
     },
