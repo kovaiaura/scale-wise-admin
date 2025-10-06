@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState } from 'react';
 
-export type UserRole = 'admin' | 'operator' | 'viewer';
+export type UserRole = 'super_admin' | 'admin' | 'operator';
 
 export interface User {
   id: string;
@@ -32,11 +32,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     // Mock authentication - replace with real API call
     await new Promise(resolve => setTimeout(resolve, 1000));
 
+    // Determine role based on username
+    let role: UserRole = 'operator';
+    if (username.includes('superadmin')) {
+      role = 'super_admin';
+    } else if (username.includes('admin')) {
+      role = 'admin';
+    }
+
     const mockUser: User = {
       id: '1',
       username,
       email: `${username}@${tenantId}.com`,
-      role: username.includes('admin') ? 'admin' : 'operator',
+      role,
       tenantId,
       tenantName: tenantId.charAt(0).toUpperCase() + tenantId.slice(1),
     };

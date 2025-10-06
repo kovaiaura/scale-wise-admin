@@ -24,10 +24,10 @@ import {
 import { useAuth } from '@/contexts/AuthContext';
 
 const mainNavItems = [
-  { title: 'Dashboard', url: '/dashboard', icon: LayoutDashboard },
-  { title: 'Operator Console', url: '/operator', icon: Scale },
-  { title: 'Weighments', url: '/weighments', icon: FileText },
-  { title: 'Reports', url: '/reports', icon: BarChart3 },
+  { title: 'Dashboard', url: '/dashboard', icon: LayoutDashboard, roles: ['super_admin', 'admin'] },
+  { title: 'Operator Console', url: '/operator', icon: Scale, roles: ['super_admin', 'admin', 'operator'] },
+  { title: 'Weighments', url: '/weighments', icon: FileText, roles: ['super_admin', 'admin', 'operator'] },
+  { title: 'Reports', url: '/reports', icon: BarChart3, roles: ['super_admin', 'admin', 'operator'] },
 ];
 
 const masterNavItems = [
@@ -37,14 +37,9 @@ const masterNavItems = [
 ];
 
 const settingsNavItems = [
-  { title: 'Weighbridge', url: '/settings/weighbridge', icon: Weight },
-  { title: 'Users', url: '/settings/users', icon: Users },
-  { title: 'Profile', url: '/settings/profile', icon: Settings },
-];
-
-const operatorSettingsNavItems = [
-  { title: 'Weighbridge', url: '/settings/weighbridge', icon: Weight },
-  { title: 'Profile', url: '/settings/profile', icon: Settings },
+  { title: 'Weighbridge', url: '/settings/weighbridge', icon: Weight, roles: ['super_admin'] },
+  { title: 'Users', url: '/settings/users', icon: Users, roles: ['super_admin'] },
+  { title: 'Profile', url: '/settings/profile', icon: Settings, roles: ['super_admin', 'admin'] },
 ];
 
 export const AppSidebar = () => {
@@ -76,7 +71,27 @@ export const AppSidebar = () => {
           <SidebarGroupLabel>Main Menu</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
-              {mainNavItems.map((item) => (
+              {mainNavItems
+                .filter((item) => item.roles.includes(user?.role || ''))
+                .map((item) => (
+                  <SidebarMenuItem key={item.title}>
+                    <SidebarMenuButton asChild isActive={isActive(item.url)}>
+                      <NavLink to={item.url}>
+                        <item.icon className="h-4 w-4" />
+                        {!collapsed && <span>{item.title}</span>}
+                      </NavLink>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                ))}
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
+
+        <SidebarGroup>
+          <SidebarGroupLabel>Masters</SidebarGroupLabel>
+          <SidebarGroupContent>
+            <SidebarMenu>
+              {masterNavItems.map((item) => (
                 <SidebarMenuItem key={item.title}>
                   <SidebarMenuButton asChild isActive={isActive(item.url)}>
                     <NavLink to={item.url}>
@@ -90,61 +105,23 @@ export const AppSidebar = () => {
           </SidebarGroupContent>
         </SidebarGroup>
 
-        {(user?.role === 'admin' || user?.role === 'operator') && (
-          <SidebarGroup>
-            <SidebarGroupLabel>Masters</SidebarGroupLabel>
-            <SidebarGroupContent>
-              <SidebarMenu>
-                {masterNavItems.map((item) => (
-                  <SidebarMenuItem key={item.title}>
-                    <SidebarMenuButton asChild isActive={isActive(item.url)}>
-                      <NavLink to={item.url}>
-                        <item.icon className="h-4 w-4" />
-                        {!collapsed && <span>{item.title}</span>}
-                      </NavLink>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                ))}
-              </SidebarMenu>
-            </SidebarGroupContent>
-          </SidebarGroup>
-        )}
-
-        {user?.role === 'admin' && (
+        {(user?.role === 'super_admin' || user?.role === 'admin') && (
           <SidebarGroup>
             <SidebarGroupLabel>Settings</SidebarGroupLabel>
             <SidebarGroupContent>
               <SidebarMenu>
-                {settingsNavItems.map((item) => (
-                  <SidebarMenuItem key={item.title}>
-                    <SidebarMenuButton asChild isActive={isActive(item.url)}>
-                      <NavLink to={item.url}>
-                        <item.icon className="h-4 w-4" />
-                        {!collapsed && <span>{item.title}</span>}
-                      </NavLink>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                ))}
-              </SidebarMenu>
-            </SidebarGroupContent>
-          </SidebarGroup>
-        )}
-
-        {user?.role === 'operator' && (
-          <SidebarGroup>
-            <SidebarGroupLabel>Settings</SidebarGroupLabel>
-            <SidebarGroupContent>
-              <SidebarMenu>
-                {operatorSettingsNavItems.map((item) => (
-                  <SidebarMenuItem key={item.title}>
-                    <SidebarMenuButton asChild isActive={isActive(item.url)}>
-                      <NavLink to={item.url}>
-                        <item.icon className="h-4 w-4" />
-                        {!collapsed && <span>{item.title}</span>}
-                      </NavLink>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                ))}
+                {settingsNavItems
+                  .filter((item) => item.roles.includes(user?.role || ''))
+                  .map((item) => (
+                    <SidebarMenuItem key={item.title}>
+                      <SidebarMenuButton asChild isActive={isActive(item.url)}>
+                        <NavLink to={item.url}>
+                          <item.icon className="h-4 w-4" />
+                          {!collapsed && <span>{item.title}</span>}
+                        </NavLink>
+                      </SidebarMenuButton>
+                    </SidebarMenuItem>
+                  ))}
               </SidebarMenu>
             </SidebarGroupContent>
           </SidebarGroup>
