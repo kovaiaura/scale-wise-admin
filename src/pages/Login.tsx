@@ -124,10 +124,13 @@ export default function Login() {
                 {loading ? 'Signing in...' : 'Sign In'}
               </Button>
 
-              <div className="text-center text-sm text-muted-foreground">
+              <div className="text-center text-sm text-muted-foreground space-y-1">
                 <p>Demo credentials:</p>
-                <p className="font-mono text-xs mt-1">
-                  Tenant: demo | User: admin / operator | Pass: password
+                <p className="font-mono text-xs">
+                  Tenant: <span className="font-semibold">demo</span> | Pass: <span className="font-semibold">password</span>
+                </p>
+                <p className="font-mono text-xs">
+                  Users: <span className="font-semibold">superadmin</span> (Super Admin) | <span className="font-semibold">admin</span> (Admin) | <span className="font-semibold">operator</span> (Operator)
                 </p>
               </div>
             </form>
