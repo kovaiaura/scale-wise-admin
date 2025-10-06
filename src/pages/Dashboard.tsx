@@ -1,6 +1,10 @@
+import { useState } from 'react';
 import { motion } from 'framer-motion';
-import { Scale, IndianRupee, Truck, FileText } from 'lucide-react';
+import { Scale, IndianRupee, Truck, FileText, Printer, Download } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
+import { Button } from '@/components/ui/button';
+import { useToast } from '@/hooks/use-toast';
 import { mockDashboardStats, mockTickets } from '@/utils/mockData';
 import {
   BarChart,
@@ -38,6 +42,26 @@ const item = {
 };
 
 export default function Dashboard() {
+  const [selectedTicket, setSelectedTicket] = useState<typeof mockTickets[0] | null>(null);
+  const { toast } = useToast();
+
+  const handlePrint = () => {
+    toast({
+      title: "Printing Bill",
+      description: `Preparing to print ${selectedTicket?.ticketNo}`,
+    });
+    // Print logic here
+    window.print();
+  };
+
+  const handleDownload = () => {
+    toast({
+      title: "Downloading Bill",
+      description: `Downloading ${selectedTicket?.ticketNo} as PDF`,
+    });
+    // Download logic here
+  };
+
   const stats = [
     {
       title: "Today's Weighments",
@@ -174,7 +198,11 @@ export default function Dashboard() {
               </thead>
               <tbody>
                 {mockTickets.slice(0, 5).map((ticket) => (
-                  <tr key={ticket.id} className="border-b hover:bg-muted/50 transition-colors">
+                  <tr 
+                    key={ticket.id} 
+                    onClick={() => setSelectedTicket(ticket)}
+                    className="border-b hover:bg-muted/50 transition-colors cursor-pointer"
+                  >
                     <td className="p-3 text-sm font-medium">{ticket.ticketNo}</td>
                     <td className="p-3 text-sm">{ticket.vehicleNo}</td>
                     <td className="p-3 text-sm">{ticket.partyName}</td>
@@ -200,6 +228,69 @@ export default function Dashboard() {
           </div>
         </CardContent>
       </Card>
+
+      <Dialog open={!!selectedTicket} onOpenChange={() => setSelectedTicket(null)}>
+        <DialogContent className="sm:max-w-[500px]">
+          <DialogHeader>
+            <DialogTitle>Bill Details</DialogTitle>
+            <DialogDescription>
+              View and manage bill {selectedTicket?.ticketNo}
+            </DialogDescription>
+          </DialogHeader>
+          
+          {selectedTicket && (
+            <div className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <p className="text-sm text-muted-foreground">Ticket No</p>
+                  <p className="font-medium">{selectedTicket.ticketNo}</p>
+                </div>
+                <div>
+                  <p className="text-sm text-muted-foreground">Vehicle</p>
+                  <p className="font-medium">{selectedTicket.vehicleNo}</p>
+                </div>
+                <div>
+                  <p className="text-sm text-muted-foreground">Party</p>
+                  <p className="font-medium">{selectedTicket.partyName}</p>
+                </div>
+                <div>
+                  <p className="text-sm text-muted-foreground">Product</p>
+                  <p className="font-medium">{selectedTicket.productName}</p>
+                </div>
+                <div>
+                  <p className="text-sm text-muted-foreground">Net Weight</p>
+                  <p className="font-medium font-mono">{selectedTicket.netWeight} kg</p>
+                </div>
+                <div>
+                  <p className="text-sm text-muted-foreground">Status</p>
+                  <span
+                    className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                      selectedTicket.status === 'completed'
+                        ? 'bg-success/10 text-success'
+                        : selectedTicket.status === 'in-progress'
+                        ? 'bg-warning/10 text-warning'
+                        : 'bg-muted text-muted-foreground'
+                    }`}
+                  >
+                    {selectedTicket.status}
+                  </span>
+                </div>
+              </div>
+
+              <div className="flex gap-2 pt-4">
+                <Button onClick={handlePrint} className="flex-1">
+                  <Printer className="mr-2 h-4 w-4" />
+                  Print Bill
+                </Button>
+                <Button onClick={handleDownload} variant="outline" className="flex-1">
+                  <Download className="mr-2 h-4 w-4" />
+                  Download PDF
+                </Button>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
