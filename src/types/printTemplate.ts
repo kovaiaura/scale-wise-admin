@@ -18,8 +18,8 @@ export interface ImagePosition {
 export interface PrintTemplate {
   id: string;
   name: string;
-  pageWidth: number; // A5 width in pixels (for 300dpi: 1748px)
-  pageHeight: number; // A5 height in pixels (for 300dpi: 2480px)
+  pageWidth: number; // A5 Landscape width in pixels (for 72dpi: 842px)
+  pageHeight: number; // A5 Landscape height in pixels (for 72dpi: 595px)
   fields: {
     ticketNo: FieldPosition;
     vehicleNo: FieldPosition;
@@ -38,25 +38,25 @@ export interface PrintTemplate {
 
 export const DEFAULT_TEMPLATE: PrintTemplate = {
   id: 'default',
-  name: 'Default A5 Template',
-  pageWidth: 595, // A5 at 72dpi (for screen preview)
-  pageHeight: 842,
+  name: 'Default A5 Landscape Template',
+  pageWidth: 842, // A5 Landscape at 72dpi (for screen preview)
+  pageHeight: 595,
   fields: {
-    ticketNo: { x: 200, y: 100, fontSize: 14, fontWeight: 'bold', align: 'left' },
-    vehicleNo: { x: 200, y: 130, fontSize: 14, fontWeight: 'bold', align: 'left' },
-    customerName: { x: 200, y: 160, fontSize: 12, align: 'left' },
-    material: { x: 200, y: 190, fontSize: 12, align: 'left' },
-    firstWeight: { x: 80, y: 300, fontSize: 16, fontWeight: 'bold', align: 'center' },
-    secondWeight: { x: 80, y: 450, fontSize: 16, fontWeight: 'bold', align: 'center' },
-    netWeight: { x: 80, y: 600, fontSize: 18, fontWeight: 'bold', align: 'center' },
-    dateTime: { x: 400, y: 700, fontSize: 10, align: 'left' },
-    amount: { x: 200, y: 750, fontSize: 14, fontWeight: 'bold', align: 'left' },
+    ticketNo: { x: 50, y: 50, fontSize: 14, fontWeight: 'bold', align: 'left' },
+    vehicleNo: { x: 50, y: 80, fontSize: 14, fontWeight: 'bold', align: 'left' },
+    customerName: { x: 50, y: 110, fontSize: 12, align: 'left' },
+    material: { x: 50, y: 140, fontSize: 12, align: 'left' },
+    firstWeight: { x: 50, y: 200, fontSize: 16, fontWeight: 'bold', align: 'left' },
+    secondWeight: { x: 250, y: 200, fontSize: 16, fontWeight: 'bold', align: 'left' },
+    netWeight: { x: 450, y: 200, fontSize: 18, fontWeight: 'bold', align: 'left' },
+    dateTime: { x: 50, y: 500, fontSize: 10, align: 'left' },
+    amount: { x: 50, y: 530, fontSize: 14, fontWeight: 'bold', align: 'left' },
   },
   image: {
-    x: 200,
-    y: 350,
-    width: 250,
-    height: 180,
+    x: 500,
+    y: 50,
+    width: 300,
+    height: 200,
   },
   createdAt: new Date().toISOString(),
   updatedAt: new Date().toISOString(),

@@ -170,11 +170,11 @@ export const PrintTemplateComponent = forwardRef<HTMLDivElement, PrintTemplatePr
         <style>{`
           @media print {
             .print-template {
-              width: 148mm !important;
-              height: 210mm !important;
+              width: 210mm !important;
+              height: 148mm !important;
             }
             @page {
-              size: A5;
+              size: A5 landscape;
               margin: 0;
             }
           }
