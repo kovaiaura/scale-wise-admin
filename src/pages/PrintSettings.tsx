@@ -8,9 +8,10 @@ import { PrintTemplate, FieldPosition } from '@/types/printTemplate';
 import { printTemplateService } from '@/services/printTemplateService';
 import { PrintTemplateComponent } from '@/components/print/PrintTemplate';
 import { Bill } from '@/types/weighment';
-import { Save, RotateCcw, Printer } from 'lucide-react';
+import { Save, RotateCcw, Printer, Edit3 } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Switch } from '@/components/ui/switch';
 
 const SAMPLE_BILL: Bill = {
   id: '1',
@@ -35,6 +36,7 @@ const SAMPLE_BILL: Bill = {
 export default function PrintSettings() {
   const [template, setTemplate] = useState<PrintTemplate>(() => printTemplateService.loadTemplate());
   const [selectedField, setSelectedField] = useState<keyof PrintTemplate['fields'] | 'image' | null>(null);
+  const [editMode, setEditMode] = useState(false);
   const { toast } = useToast();
   const printRef = useRef<HTMLDivElement>(null);
 
@@ -86,6 +88,31 @@ export default function PrintSettings() {
     }));
   };
 
+  const handleFieldDrag = (field: keyof PrintTemplate['fields'], x: number, y: number) => {
+    setTemplate((prev) => ({
+      ...prev,
+      fields: {
+        ...prev.fields,
+        [field]: {
+          ...prev.fields[field],
+          x,
+          y,
+        },
+      },
+    }));
+  };
+
+  const handleImageDrag = (x: number, y: number) => {
+    setTemplate((prev) => ({
+      ...prev,
+      image: {
+        ...prev.image,
+        x,
+        y,
+      },
+    }));
+  };
+
   const fieldLabels: Record<keyof PrintTemplate['fields'], string> = {
     ticketNo: 'Ticket Number',
     vehicleNo: 'Vehicle Number',
@@ -123,18 +150,54 @@ export default function PrintSettings() {
         {/* Preview Panel */}
         <Card>
           <CardHeader>
-            <CardTitle>Print Preview</CardTitle>
-            <CardDescription>
-              This shows how the bill will be printed on your pre-printed sheet
-            </CardDescription>
-            <Button onClick={handleTestPrint} className="mt-2">
-              <Printer className="mr-2 h-4 w-4" />
-              Test Print
-            </Button>
+            <div className="flex items-center justify-between">
+              <div>
+                <CardTitle>Print Preview</CardTitle>
+                <CardDescription>
+                  {editMode
+                    ? 'Drag fields to reposition them on the template'
+                    : 'This shows how the bill will be printed'}
+                </CardDescription>
+              </div>
+              <div className="flex items-center gap-3">
+                <div className="flex items-center gap-2">
+                  <Label htmlFor="edit-mode" className="text-sm cursor-pointer">
+                    Edit Mode
+                  </Label>
+                  <Switch id="edit-mode" checked={editMode} onCheckedChange={setEditMode} />
+                </div>
+              </div>
+            </div>
+            {!editMode && (
+              <Button onClick={handleTestPrint} className="mt-2">
+                <Printer className="mr-2 h-4 w-4" />
+                Test Print
+              </Button>
+            )}
           </CardHeader>
           <CardContent>
+            {editMode && (
+              <div className="mb-4 p-3 bg-primary/5 border border-primary/20 rounded-lg text-sm">
+                <div className="flex items-start gap-2">
+                  <Edit3 className="h-4 w-4 text-primary mt-0.5" />
+                  <div>
+                    <p className="font-medium text-primary">Drag & Drop Mode Active</p>
+                    <p className="text-muted-foreground mt-1">
+                      Click and drag any field or image to reposition. Coordinates update automatically.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
             <div className="border rounded-lg overflow-auto" style={{ maxHeight: '800px' }}>
-              <PrintTemplateComponent ref={printRef} bill={SAMPLE_BILL} template={template} />
+              <PrintTemplateComponent
+                ref={printRef}
+                bill={SAMPLE_BILL}
+                template={template}
+                editMode={editMode}
+                onFieldUpdate={handleFieldDrag}
+                onImageUpdate={handleImageDrag}
+              />
             </div>
           </CardContent>
         </Card>
