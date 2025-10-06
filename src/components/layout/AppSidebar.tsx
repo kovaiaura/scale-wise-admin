@@ -10,6 +10,7 @@ import {
   Package,
   Weight,
   Hash,
+  Printer,
 } from 'lucide-react';
 import {
   Sidebar,
@@ -40,6 +41,7 @@ const masterNavItems = [
 const settingsNavItems = [
   { title: 'Weighbridge', url: '/settings/weighbridge', icon: Weight, roles: ['super_admin'] },
   { title: 'Serial Number', url: '/settings/serial-number', icon: Hash, roles: ['super_admin', 'admin'] },
+  { title: 'Print Template', url: '/settings/print-template', icon: Printer, roles: ['super_admin', 'admin'] },
   { title: 'Users', url: '/settings/users', icon: Users, roles: ['super_admin'] },
   { title: 'Profile', url: '/settings/profile', icon: Settings, roles: ['super_admin', 'admin'] },
 ];

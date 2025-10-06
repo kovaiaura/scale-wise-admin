@@ -17,6 +17,7 @@ import MastersProducts from "./pages/MastersProducts";
 import SettingsWeighbridge from "./pages/SettingsWeighbridge";
 import SettingsSerialNumber from "./pages/SettingsSerialNumber";
 import SettingsProfile from "./pages/SettingsProfile";
+import PrintSettings from "./pages/PrintSettings";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -42,6 +43,7 @@ const App = () => (
                 <Route path="masters/products" element={<MastersProducts />} />
                 <Route path="settings/weighbridge" element={<SettingsWeighbridge />} />
                 <Route path="settings/serial-number" element={<SettingsSerialNumber />} />
+                <Route path="settings/print-template" element={<PrintSettings />} />
                 <Route path="settings/users" element={<div>User Management (Coming Soon)</div>} />
                 <Route path="settings/profile" element={<SettingsProfile />} />
               </Route>
