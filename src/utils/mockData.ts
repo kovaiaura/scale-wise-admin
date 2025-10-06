@@ -170,7 +170,7 @@ export const mockProducts: Product[] = [
 
 export const mockDashboardStats = {
   todayWeighments: 12,
-  totalWeight: 145000,
+  totalAmount: 15420,
   activeVehicles: 3,
   pendingTickets: 2,
 };

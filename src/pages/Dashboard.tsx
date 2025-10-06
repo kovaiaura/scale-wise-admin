@@ -1,5 +1,5 @@
 import { motion } from 'framer-motion';
-import { Scale, TrendingUp, Truck, FileText } from 'lucide-react';
+import { Scale, IndianRupee, Truck, FileText } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { mockDashboardStats, mockTickets } from '@/utils/mockData';
 import {
@@ -47,9 +47,9 @@ export default function Dashboard() {
       bgColor: 'bg-primary/10',
     },
     {
-      title: 'Total Weight',
-      value: `${(mockDashboardStats.totalWeight / 1000).toFixed(1)}T`,
-      icon: TrendingUp,
+      title: "Today's Amount",
+      value: `₹${mockDashboardStats.totalAmount.toLocaleString()}`,
+      icon: IndianRupee,
       color: 'text-success',
       bgColor: 'bg-success/10',
     },
