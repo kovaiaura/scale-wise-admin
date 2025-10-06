@@ -46,8 +46,10 @@ export const API_ENDPOINTS = {
   PARTIES: '/api/parties',
   PRODUCTS: '/api/products',
   
-  // Serial Number endpoint
+  // Serial Number endpoints
   SERIAL_NUMBER_NEXT: '/api/serial-number/next',
+  SERIAL_NUMBER_CONFIG: '/api/serial-number/config',
+  SERIAL_NUMBER_PREVIEW: '/api/serial-number/preview',
   
   // Health check
   HEALTH: '/api/health',
