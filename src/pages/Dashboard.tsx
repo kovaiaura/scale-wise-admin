@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react';
+import { useState } from 'react';
 import { motion } from 'framer-motion';
 import { Scale, IndianRupee, Truck, FileText, Printer, Download } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -6,10 +6,6 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { mockDashboardStats, mockTickets } from '@/utils/mockData';
-import { PrintTemplateComponent } from '@/components/print/PrintTemplate';
-import { printTemplateService } from '@/services/printTemplateService';
-import { Bill } from '@/types/weighment';
-import jsPDF from 'jspdf';
 import {
   BarChart,
   Bar,
@@ -48,63 +44,19 @@ const item = {
 export default function Dashboard() {
   const [selectedTicket, setSelectedTicket] = useState<typeof mockTickets[0] | null>(null);
   const { toast } = useToast();
-  const printRef = useRef<HTMLDivElement>(null);
 
   const handlePrint = () => {
-    if (!printRef.current) return;
-    
-    const printWindow = window.open('', '', 'width=600,height=800');
-    if (printWindow) {
-      printWindow.document.write('<html><head><title>Print Bill</title>');
-      printWindow.document.write('<style>@media print { @page { size: A5; margin: 0; } }</style>');
-      printWindow.document.write('</head><body>');
-      printWindow.document.write(printRef.current.innerHTML);
-      printWindow.document.write('</body></html>');
-      printWindow.document.close();
-      printWindow.focus();
-      setTimeout(() => {
-        printWindow.print();
-        printWindow.close();
-      }, 250);
-      
-      toast({
-        title: "Printing Bill",
-        description: `Printing ${selectedTicket?.ticketNo}`,
-      });
-    }
+    toast({
+      title: "Print Feature",
+      description: "Configure print template in Settings → Print Template, then print from there.",
+    });
   };
 
-  const handleDownload = async () => {
-    if (!printRef.current || !selectedTicket) return;
-
-    try {
-      const pdf = new jsPDF({
-        orientation: 'portrait',
-        unit: 'mm',
-        format: 'a5',
-      });
-
-      const canvas = await import('html2canvas').then((mod) => mod.default);
-      const canvasEl = await canvas(printRef.current, {
-        scale: 2,
-        backgroundColor: '#ffffff',
-      });
-
-      const imgData = canvasEl.toDataURL('image/png');
-      pdf.addImage(imgData, 'PNG', 0, 0, 148, 210);
-      pdf.save(`bill-${selectedTicket.ticketNo}.pdf`);
-
-      toast({
-        title: "PDF Downloaded",
-        description: `Bill ${selectedTicket.ticketNo} downloaded successfully`,
-      });
-    } catch (error) {
-      toast({
-        title: "Download Failed",
-        description: "Failed to generate PDF. Please try again.",
-        variant: "destructive",
-      });
-    }
+  const handleDownload = () => {
+    toast({
+      title: "Download Feature",
+      description: "Configure print template in Settings → Print Template for PDF downloads.",
+    });
   };
 
   const stats = [
@@ -320,24 +272,6 @@ export default function Dashboard() {
                     {selectedTicket.status}
                   </span>
                 </div>
-              </div>
-
-              {/* Hidden print template */}
-              <div style={{ display: 'none' }}>
-                <PrintTemplateComponent 
-                  ref={printRef} 
-                  bill={{
-                    ...selectedTicket,
-                    billNo: selectedTicket.ticketNo,
-                    charges: 150,
-                    capturedImage: null,
-                    frontImage: null,
-                    rearImage: null,
-                    status: 'CLOSED' as const,
-                    firstWeightType: 'gross' as const,
-                  }}
-                  template={printTemplateService.loadTemplate()}
-                />
               </div>
 
               <div className="flex gap-2 pt-4">
