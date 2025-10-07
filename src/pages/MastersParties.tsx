@@ -1,5 +1,7 @@
 import { useState } from 'react';
-import { Plus, Search, Edit, Trash2 } from 'lucide-react';
+import { Plus, Search, Edit, Trash2, Lock } from 'lucide-react';
+import { useAuth } from '@/contexts/AuthContext';
+import { useAccessControl } from '@/contexts/AccessControlContext';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -22,6 +24,8 @@ export default function MastersParties() {
     email: ''
   });
   const { toast } = useToast();
+  const { user } = useAuth();
+  const { checkAccess, showBlockedDialog } = useAccessControl();
 
   const filteredParties = parties.filter(
     (party) =>
@@ -36,6 +40,10 @@ export default function MastersParties() {
   };
 
   const handleSave = () => {
+    if (!checkAccess(user?.role)) {
+      showBlockedDialog();
+      return;
+    }
     if (!formData.partyName || !formData.address || !formData.contactPerson || !formData.contactNo || !formData.email) {
       toast({
         title: "Error",
@@ -81,6 +89,10 @@ export default function MastersParties() {
   };
 
   const handleUpdate = () => {
+    if (!checkAccess(user?.role)) {
+      showBlockedDialog();
+      return;
+    }
     if (!selectedParty.partyName || !selectedParty.address || !selectedParty.contactPerson || !selectedParty.contactNo || !selectedParty.email) {
       toast({
         title: "Error",
@@ -103,6 +115,10 @@ export default function MastersParties() {
 
   const handleDelete = (partyId: string, e: React.MouseEvent) => {
     e.stopPropagation();
+    if (!checkAccess(user?.role)) {
+      showBlockedDialog();
+      return;
+    }
     setParties(parties.filter(p => p.id !== partyId));
     toast({
       title: "Success",
@@ -117,7 +133,8 @@ export default function MastersParties() {
           <h1 className="text-3xl font-bold">Parties</h1>
           <p className="text-muted-foreground">Manage party/customer master data</p>
         </div>
-        <Button onClick={() => setIsDialogOpen(true)}>
+        <Button onClick={() => setIsDialogOpen(true)} disabled={!checkAccess(user?.role)}>
+          {!checkAccess(user?.role) && <Lock className="mr-2 h-4 w-4" />}
           <Plus className="mr-2 h-4 w-4" />
           Add Party
         </Button>

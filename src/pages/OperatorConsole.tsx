@@ -1,13 +1,27 @@
 import { useWeighbridge } from '@/hooks/useWeighbridge';
+import { useAuth } from '@/contexts/AuthContext';
+import { useAccessControl } from '@/contexts/AccessControlContext';
 import { Badge } from '@/components/ui/badge';
-import { Wifi, WifiOff, Loader2 } from 'lucide-react';
+import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
+import { Wifi, WifiOff, Loader2, Lock } from 'lucide-react';
 import UnifiedWeighmentForm from '@/components/operator/UnifiedWeighmentForm';
 
 export default function OperatorConsole() {
   const { liveWeight, isStable, connectionStatus, isConnecting } = useWeighbridge();
+  const { user } = useAuth();
+  const { checkAccess, isAccessBlocked } = useAccessControl();
 
   return (
     <div className="space-y-6">
+      {isAccessBlocked && user?.role !== 'super_admin' && (
+        <Alert variant="destructive">
+          <Lock className="h-4 w-4" />
+          <AlertTitle>Limited Access Mode</AlertTitle>
+          <AlertDescription>
+            Some features are currently restricted. Contact your administrator to restore access.
+          </AlertDescription>
+        </Alert>
+      )}
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold">Operator Console</h1>

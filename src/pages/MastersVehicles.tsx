@@ -1,10 +1,13 @@
 import { useState } from 'react';
-import { Plus, Search, Edit, Trash2 } from 'lucide-react';
+import { Plus, Search, Edit, Trash2, Lock } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { useAuth } from '@/contexts/AuthContext';
+import { useAccessControl } from '@/contexts/AccessControlContext';
 import { mockVehicles } from '@/utils/mockData';
 import { useToast } from '@/hooks/use-toast';
 
@@ -21,6 +24,8 @@ export default function MastersVehicles() {
     contactNo: ''
   });
   const { toast } = useToast();
+  const { user } = useAuth();
+  const { checkAccess, showBlockedDialog } = useAccessControl();
 
   const filteredVehicles = vehicles.filter(
     (vehicle) =>
@@ -34,6 +39,11 @@ export default function MastersVehicles() {
   };
 
   const handleSave = () => {
+    if (!checkAccess(user?.role)) {
+      showBlockedDialog();
+      return;
+    }
+
     if (!formData.vehicleNo || !formData.vehicleType || !formData.ownerName || !formData.contactNo) {
       toast({
         title: "Error",
@@ -78,6 +88,11 @@ export default function MastersVehicles() {
   };
 
   const handleUpdate = () => {
+    if (!checkAccess(user?.role)) {
+      showBlockedDialog();
+      return;
+    }
+
     if (!selectedVehicle.vehicleNo || !selectedVehicle.vehicleType || !selectedVehicle.ownerName || !selectedVehicle.contactNo) {
       toast({
         title: "Error",
@@ -100,6 +115,12 @@ export default function MastersVehicles() {
 
   const handleDelete = (vehicleId: string, e: React.MouseEvent) => {
     e.stopPropagation();
+    
+    if (!checkAccess(user?.role)) {
+      showBlockedDialog();
+      return;
+    }
+
     setVehicles(vehicles.filter(v => v.id !== vehicleId));
     toast({
       title: "Success",
@@ -114,7 +135,8 @@ export default function MastersVehicles() {
           <h1 className="text-3xl font-bold">Vehicles</h1>
           <p className="text-muted-foreground">Manage vehicle master data</p>
         </div>
-        <Button onClick={() => setIsDialogOpen(true)}>
+        <Button onClick={() => setIsDialogOpen(true)} disabled={!checkAccess(user?.role)}>
+          {!checkAccess(user?.role) && <Lock className="mr-2 h-4 w-4" />}
           <Plus className="mr-2 h-4 w-4" />
           Add Vehicle
         </Button>

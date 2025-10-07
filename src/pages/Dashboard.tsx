@@ -5,6 +5,8 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
+import { useAuth } from '@/contexts/AuthContext';
+import { useAccessControl } from '@/contexts/AccessControlContext';
 import { mockDashboardStats, mockTickets, WeighmentTicket } from '@/utils/mockData';
 import { PrintTemplateComponent } from '@/components/print/PrintTemplate';
 import { printTemplateService } from '@/services/printTemplateService';
@@ -49,6 +51,8 @@ const item = {
 export default function Dashboard() {
   const [selectedTicket, setSelectedTicket] = useState<WeighmentTicket | null>(null);
   const { toast } = useToast();
+  const { user } = useAuth();
+  const { checkAccess, showBlockedDialog } = useAccessControl();
   const printRef = useRef<HTMLDivElement>(null);
   const template = printTemplateService.loadTemplate();
 
@@ -74,6 +78,11 @@ export default function Dashboard() {
   });
 
   const handlePrint = async () => {
+    if (!checkAccess(user?.role)) {
+      showBlockedDialog();
+      return;
+    }
+
     if (!printRef.current || !selectedTicket) return;
 
     try {
@@ -123,6 +132,11 @@ export default function Dashboard() {
   };
 
   const handleDownload = async () => {
+    if (!checkAccess(user?.role)) {
+      showBlockedDialog();
+      return;
+    }
+
     if (!printRef.current || !selectedTicket) return;
 
     try {

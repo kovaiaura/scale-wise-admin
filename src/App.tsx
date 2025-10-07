@@ -5,6 +5,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider } from "./contexts/AuthContext";
 import { NotificationProvider } from "./contexts/NotificationContext";
+import { AccessControlProvider } from "./contexts/AccessControlContext";
 import { AppLayout } from "./components/layout/AppLayout";
 import Login from "./pages/Login";
 import Dashboard from "./pages/Dashboard";
@@ -17,10 +18,46 @@ import MastersProducts from "./pages/MastersProducts";
 import SettingsWeighbridge from "./pages/SettingsWeighbridge";
 import SettingsSerialNumber from "./pages/SettingsSerialNumber";
 import SettingsProfile from "./pages/SettingsProfile";
+import SettingsUsers from "./pages/SettingsUsers";
 import PrintSettings from "./pages/PrintSettings";
 import NotFound from "./pages/NotFound";
+import AccessBlockedDialog from "./components/operator/AccessBlockedDialog";
+import { useAccessControl } from "./contexts/AccessControlContext";
 
 const queryClient = new QueryClient();
+
+const AppContent = () => {
+  const { isDialogOpen, closeDialog, blockedMessage } = useAccessControl();
+
+  return (
+    <>
+      <Routes>
+        <Route path="/login" element={<Login />} />
+        <Route path="/" element={<AppLayout />}>
+          <Route index element={<Navigate to="/dashboard" replace />} />
+          <Route path="dashboard" element={<Dashboard />} />
+          <Route path="operator" element={<OperatorConsole />} />
+          <Route path="weighments" element={<Weighments />} />
+          <Route path="reports" element={<Reports />} />
+          <Route path="masters/vehicles" element={<MastersVehicles />} />
+          <Route path="masters/parties" element={<MastersParties />} />
+          <Route path="masters/products" element={<MastersProducts />} />
+          <Route path="settings/weighbridge" element={<SettingsWeighbridge />} />
+          <Route path="settings/serial-number" element={<SettingsSerialNumber />} />
+          <Route path="settings/print-template" element={<PrintSettings />} />
+          <Route path="settings/users" element={<SettingsUsers />} />
+          <Route path="settings/profile" element={<SettingsProfile />} />
+        </Route>
+        <Route path="*" element={<NotFound />} />
+      </Routes>
+      <AccessBlockedDialog 
+        open={isDialogOpen} 
+        onOpenChange={closeDialog}
+        message={blockedMessage}
+      />
+    </>
+  );
+};
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
@@ -29,27 +66,11 @@ const App = () => (
       <Sonner />
       <BrowserRouter>
         <AuthProvider>
-          <NotificationProvider>
-            <Routes>
-              <Route path="/login" element={<Login />} />
-              <Route path="/" element={<AppLayout />}>
-                <Route index element={<Navigate to="/dashboard" replace />} />
-                <Route path="dashboard" element={<Dashboard />} />
-                <Route path="operator" element={<OperatorConsole />} />
-                <Route path="weighments" element={<Weighments />} />
-                <Route path="reports" element={<Reports />} />
-                <Route path="masters/vehicles" element={<MastersVehicles />} />
-                <Route path="masters/parties" element={<MastersParties />} />
-                <Route path="masters/products" element={<MastersProducts />} />
-                <Route path="settings/weighbridge" element={<SettingsWeighbridge />} />
-                <Route path="settings/serial-number" element={<SettingsSerialNumber />} />
-                <Route path="settings/print-template" element={<PrintSettings />} />
-                <Route path="settings/users" element={<div>User Management (Coming Soon)</div>} />
-                <Route path="settings/profile" element={<SettingsProfile />} />
-              </Route>
-              <Route path="*" element={<NotFound />} />
-            </Routes>
-          </NotificationProvider>
+          <AccessControlProvider>
+            <NotificationProvider>
+              <AppContent />
+            </NotificationProvider>
+          </AccessControlProvider>
         </AuthProvider>
       </BrowserRouter>
     </TooltipProvider>
