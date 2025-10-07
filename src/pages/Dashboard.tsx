@@ -1,6 +1,7 @@
 import { useState, useRef } from 'react';
 import { motion } from 'framer-motion';
 import { Scale, IndianRupee, Truck, FileText, Printer, Download } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
@@ -55,6 +56,7 @@ export default function Dashboard() {
   const { checkAccess, showBlockedDialog } = useAccessControl();
   const printRef = useRef<HTMLDivElement>(null);
   const template = printTemplateService.loadTemplate();
+  const navigate = useNavigate();
 
   // Convert WeighmentTicket to Bill for printing
   const convertToBill = (ticket: WeighmentTicket): Bill => ({
@@ -219,7 +221,12 @@ export default function Dashboard() {
       >
         {stats.map((stat) => (
           <motion.div key={stat.title} variants={item}>
-            <Card className="card-shadow hover:shadow-elevated transition-shadow">
+            <Card 
+              className={`card-shadow hover:shadow-elevated transition-shadow ${
+                stat.title === 'Pending Tickets' ? 'cursor-pointer' : ''
+              }`}
+              onClick={() => stat.title === 'Pending Tickets' && navigate('/operator-console')}
+            >
               <CardHeader className="flex flex-row items-center justify-between pb-2">
                 <CardTitle className="text-sm font-medium text-muted-foreground">
                   {stat.title}
