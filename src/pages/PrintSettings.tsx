@@ -78,11 +78,21 @@ export default function PrintSettings() {
     }));
   };
 
-  const updateImagePosition = (property: 'x' | 'y' | 'width' | 'height', value: number) => {
+  const updateFrontImagePosition = (property: 'x' | 'y' | 'width' | 'height', value: number) => {
     setTemplate((prev) => ({
       ...prev,
-      image: {
-        ...prev.image,
+      frontImage: {
+        ...prev.frontImage,
+        [property]: value,
+      },
+    }));
+  };
+
+  const updateRearImagePosition = (property: 'x' | 'y' | 'width' | 'height', value: number) => {
+    setTemplate((prev) => ({
+      ...prev,
+      rearImage: {
+        ...prev.rearImage,
         [property]: value,
       },
     }));
@@ -102,11 +112,22 @@ export default function PrintSettings() {
     }));
   };
 
-  const handleImageDrag = (x: number, y: number) => {
+  const handleFrontImageDrag = (x: number, y: number) => {
     setTemplate((prev) => ({
       ...prev,
-      image: {
-        ...prev.image,
+      frontImage: {
+        ...prev.frontImage,
+        x,
+        y,
+      },
+    }));
+  };
+
+  const handleRearImageDrag = (x: number, y: number) => {
+    setTemplate((prev) => ({
+      ...prev,
+      rearImage: {
+        ...prev.rearImage,
         x,
         y,
       },
@@ -196,7 +217,8 @@ export default function PrintSettings() {
                 template={template}
                 editMode={editMode}
                 onFieldUpdate={handleFieldDrag}
-                onImageUpdate={handleImageDrag}
+                onFrontImageUpdate={handleFrontImageDrag}
+                onRearImageUpdate={handleRearImageDrag}
               />
             </div>
           </CardContent>
@@ -212,9 +234,10 @@ export default function PrintSettings() {
           </CardHeader>
           <CardContent>
             <Tabs defaultValue="fields" className="w-full">
-              <TabsList className="grid w-full grid-cols-2">
+              <TabsList className="grid w-full grid-cols-3">
                 <TabsTrigger value="fields">Text Fields</TabsTrigger>
-                <TabsTrigger value="image">Image</TabsTrigger>
+                <TabsTrigger value="frontImage">Front Image</TabsTrigger>
+                <TabsTrigger value="rearImage">Rear Image</TabsTrigger>
               </TabsList>
 
               <TabsContent value="fields" className="space-y-4 mt-4">
@@ -271,44 +294,88 @@ export default function PrintSettings() {
                 </div>
               </TabsContent>
 
-              <TabsContent value="image" className="space-y-4 mt-4">
+              <TabsContent value="frontImage" className="space-y-4 mt-4">
                 <Card className="p-4">
-                  <h3 className="font-semibold mb-3">Vehicle Image</h3>
+                  <h3 className="font-semibold mb-3">Front Camera Image</h3>
                   <div className="grid grid-cols-2 gap-3">
                     <div>
-                      <Label htmlFor="image-x">X Position (px)</Label>
+                      <Label htmlFor="front-image-x">X Position (px)</Label>
                       <Input
-                        id="image-x"
+                        id="front-image-x"
                         type="number"
-                        value={template.image.x}
-                        onChange={(e) => updateImagePosition('x', Number(e.target.value))}
+                        value={template.frontImage.x}
+                        onChange={(e) => updateFrontImagePosition('x', Number(e.target.value))}
                       />
                     </div>
                     <div>
-                      <Label htmlFor="image-y">Y Position (px)</Label>
+                      <Label htmlFor="front-image-y">Y Position (px)</Label>
                       <Input
-                        id="image-y"
+                        id="front-image-y"
                         type="number"
-                        value={template.image.y}
-                        onChange={(e) => updateImagePosition('y', Number(e.target.value))}
+                        value={template.frontImage.y}
+                        onChange={(e) => updateFrontImagePosition('y', Number(e.target.value))}
                       />
                     </div>
                     <div>
-                      <Label htmlFor="image-width">Width (px)</Label>
+                      <Label htmlFor="front-image-width">Width (px)</Label>
                       <Input
-                        id="image-width"
+                        id="front-image-width"
                         type="number"
-                        value={template.image.width}
-                        onChange={(e) => updateImagePosition('width', Number(e.target.value))}
+                        value={template.frontImage.width}
+                        onChange={(e) => updateFrontImagePosition('width', Number(e.target.value))}
                       />
                     </div>
                     <div>
-                      <Label htmlFor="image-height">Height (px)</Label>
+                      <Label htmlFor="front-image-height">Height (px)</Label>
                       <Input
-                        id="image-height"
+                        id="front-image-height"
                         type="number"
-                        value={template.image.height}
-                        onChange={(e) => updateImagePosition('height', Number(e.target.value))}
+                        value={template.frontImage.height}
+                        onChange={(e) => updateFrontImagePosition('height', Number(e.target.value))}
+                      />
+                    </div>
+                  </div>
+                </Card>
+              </TabsContent>
+
+              <TabsContent value="rearImage" className="space-y-4 mt-4">
+                <Card className="p-4">
+                  <h3 className="font-semibold mb-3">Rear Camera Image</h3>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <Label htmlFor="rear-image-x">X Position (px)</Label>
+                      <Input
+                        id="rear-image-x"
+                        type="number"
+                        value={template.rearImage.x}
+                        onChange={(e) => updateRearImagePosition('x', Number(e.target.value))}
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="rear-image-y">Y Position (px)</Label>
+                      <Input
+                        id="rear-image-y"
+                        type="number"
+                        value={template.rearImage.y}
+                        onChange={(e) => updateRearImagePosition('y', Number(e.target.value))}
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="rear-image-width">Width (px)</Label>
+                      <Input
+                        id="rear-image-width"
+                        type="number"
+                        value={template.rearImage.width}
+                        onChange={(e) => updateRearImagePosition('width', Number(e.target.value))}
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="rear-image-height">Height (px)</Label>
+                      <Input
+                        id="rear-image-height"
+                        type="number"
+                        value={template.rearImage.height}
+                        onChange={(e) => updateRearImagePosition('height', Number(e.target.value))}
                       />
                     </div>
                   </div>

@@ -9,11 +9,12 @@ interface PrintTemplateProps {
   template: PrintTemplate;
   editMode?: boolean;
   onFieldUpdate?: (field: keyof PrintTemplate['fields'], x: number, y: number) => void;
-  onImageUpdate?: (x: number, y: number, width?: number, height?: number) => void;
+  onFrontImageUpdate?: (x: number, y: number, width?: number, height?: number) => void;
+  onRearImageUpdate?: (x: number, y: number, width?: number, height?: number) => void;
 }
 
 export const PrintTemplateComponent = forwardRef<HTMLDivElement, PrintTemplateProps>(
-  ({ bill, template, editMode = false, onFieldUpdate, onImageUpdate }, ref) => {
+  ({ bill, template, editMode = false, onFieldUpdate, onFrontImageUpdate, onRearImageUpdate }, ref) => {
     const [dragging, setDragging] = useState<{ type: 'field' | 'image'; key: string } | null>(null);
     const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
 
@@ -53,11 +54,15 @@ export const PrintTemplateComponent = forwardRef<HTMLDivElement, PrintTemplatePr
 
         if (dragging.type === 'field' && onFieldUpdate) {
           onFieldUpdate(dragging.key as keyof PrintTemplate['fields'], Math.round(x), Math.round(y));
-        } else if (dragging.type === 'image' && onImageUpdate) {
-          onImageUpdate(Math.round(x), Math.round(y));
+        } else if (dragging.type === 'image') {
+          if (dragging.key === 'frontImage' && onFrontImageUpdate) {
+            onFrontImageUpdate(Math.round(x), Math.round(y));
+          } else if (dragging.key === 'rearImage' && onRearImageUpdate) {
+            onRearImageUpdate(Math.round(x), Math.round(y));
+          }
         }
       },
-      [dragging, editMode, dragOffset, template.pageWidth, template.pageHeight, onFieldUpdate, onImageUpdate]
+      [dragging, editMode, dragOffset, template.pageWidth, template.pageHeight, onFieldUpdate, onFrontImageUpdate, onRearImageUpdate]
     );
 
     const handleMouseUp = useCallback(() => {
@@ -131,16 +136,16 @@ export const PrintTemplateComponent = forwardRef<HTMLDivElement, PrintTemplatePr
         {renderField('dateTime', formatDateTime(bill.createdAt), 'Date & Time')}
         {renderField('amount', formatCurrency(bill.charges), 'Amount')}
 
-        {/* Vehicle Image */}
-        {(bill.frontImage || bill.rearImage) && (
+        {/* Front Camera Image */}
+        {bill.frontImage && (
           <div
-            onMouseDown={(e) => handleMouseDown(e, 'image', 'image', template.image.x, template.image.y)}
+            onMouseDown={(e) => handleMouseDown(e, 'image', 'frontImage', template.frontImage.x, template.frontImage.y)}
             style={{
               position: 'absolute',
-              left: `${template.image.x}px`,
-              top: `${template.image.y}px`,
-              width: `${template.image.width}px`,
-              height: `${template.image.height}px`,
+              left: `${template.frontImage.x}px`,
+              top: `${template.frontImage.y}px`,
+              width: `${template.frontImage.width}px`,
+              height: `${template.frontImage.height}px`,
               cursor: editMode ? 'move' : 'default',
               border: editMode ? '2px dashed hsl(var(--primary))' : 'none',
               padding: editMode ? '4px' : '0',
@@ -151,12 +156,48 @@ export const PrintTemplateComponent = forwardRef<HTMLDivElement, PrintTemplatePr
             {editMode && (
               <div className="absolute -top-6 left-0 text-xs text-primary font-medium bg-background px-2 py-1 rounded">
                 <Move className="inline h-3 w-3 mr-1" />
-                Vehicle Image
+                Front Camera
               </div>
             )}
             <img
-              src={bill.frontImage || bill.rearImage || ''}
-              alt="Vehicle"
+              src={bill.frontImage}
+              alt="Front Camera"
+              style={{
+                width: '100%',
+                height: '100%',
+                objectFit: 'cover',
+                pointerEvents: 'none',
+              }}
+            />
+          </div>
+        )}
+
+        {/* Rear Camera Image */}
+        {bill.rearImage && (
+          <div
+            onMouseDown={(e) => handleMouseDown(e, 'image', 'rearImage', template.rearImage.x, template.rearImage.y)}
+            style={{
+              position: 'absolute',
+              left: `${template.rearImage.x}px`,
+              top: `${template.rearImage.y}px`,
+              width: `${template.rearImage.width}px`,
+              height: `${template.rearImage.height}px`,
+              cursor: editMode ? 'move' : 'default',
+              border: editMode ? '2px dashed hsl(var(--primary))' : 'none',
+              padding: editMode ? '4px' : '0',
+              borderRadius: editMode ? '4px' : '0',
+            }}
+            className={editMode ? 'hover:border-primary' : ''}
+          >
+            {editMode && (
+              <div className="absolute -top-6 left-0 text-xs text-primary font-medium bg-background px-2 py-1 rounded">
+                <Move className="inline h-3 w-3 mr-1" />
+                Rear Camera
+              </div>
+            )}
+            <img
+              src={bill.rearImage}
+              alt="Rear Camera"
               style={{
                 width: '100%',
                 height: '100%',

@@ -31,7 +31,8 @@ export interface PrintTemplate {
     dateTime: FieldPosition;
     amount: FieldPosition;
   };
-  image: ImagePosition;
+  frontImage: ImagePosition;
+  rearImage: ImagePosition;
   createdAt: string;
   updatedAt: string;
 }
@@ -52,11 +53,17 @@ export const DEFAULT_TEMPLATE: PrintTemplate = {
     dateTime: { x: 50, y: 500, fontSize: 10, align: 'left' },
     amount: { x: 50, y: 530, fontSize: 14, fontWeight: 'bold', align: 'left' },
   },
-  image: {
+  frontImage: {
     x: 500,
-    y: 50,
-    width: 300,
-    height: 200,
+    y: 250,
+    width: 150,
+    height: 120,
+  },
+  rearImage: {
+    x: 670,
+    y: 250,
+    width: 150,
+    height: 120,
   },
   createdAt: new Date().toISOString(),
   updatedAt: new Date().toISOString(),

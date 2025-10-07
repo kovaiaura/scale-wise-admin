@@ -1,11 +1,16 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { motion } from 'framer-motion';
 import { Scale, IndianRupee, Truck, FileText, Printer, Download } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
-import { mockDashboardStats, mockTickets } from '@/utils/mockData';
+import { mockDashboardStats, mockTickets, WeighmentTicket } from '@/utils/mockData';
+import { PrintTemplateComponent } from '@/components/print/PrintTemplate';
+import { printTemplateService } from '@/services/printTemplateService';
+import { Bill } from '@/types/weighment';
+import html2canvas from 'html2canvas';
+import jsPDF from 'jspdf';
 import {
   BarChart,
   Bar,
@@ -42,21 +47,75 @@ const item = {
 };
 
 export default function Dashboard() {
-  const [selectedTicket, setSelectedTicket] = useState<typeof mockTickets[0] | null>(null);
+  const [selectedTicket, setSelectedTicket] = useState<WeighmentTicket | null>(null);
   const { toast } = useToast();
+  const printRef = useRef<HTMLDivElement>(null);
+  const template = printTemplateService.loadTemplate();
+
+  // Convert WeighmentTicket to Bill for printing
+  const convertToBill = (ticket: WeighmentTicket): Bill => ({
+    id: ticket.id,
+    billNo: `BILL-${ticket.ticketNo}`,
+    ticketNo: ticket.ticketNo,
+    vehicleNo: ticket.vehicleNo,
+    partyName: ticket.partyName,
+    productName: ticket.productName,
+    grossWeight: ticket.grossWeight,
+    tareWeight: ticket.tareWeight,
+    netWeight: ticket.netWeight,
+    charges: 0,
+    capturedImage: null,
+    frontImage: 'https://images.unsplash.com/photo-1511527844068-006b95d162c8?w=400',
+    rearImage: 'https://images.unsplash.com/photo-1519003722824-194d4455a60c?w=400',
+    status: 'CLOSED',
+    createdAt: `${ticket.date}T${ticket.time}`,
+    updatedAt: `${ticket.date}T${ticket.time}`,
+    firstWeightType: 'gross',
+  });
 
   const handlePrint = () => {
+    window.print();
     toast({
-      title: "Print Feature",
-      description: "Configure print template in Settings → Print Template, then print from there.",
+      title: "Bill Printed",
+      description: `Bill for ${selectedTicket?.ticketNo} has been sent to printer`,
     });
   };
 
-  const handleDownload = () => {
-    toast({
-      title: "Download Feature",
-      description: "Configure print template in Settings → Print Template for PDF downloads.",
-    });
+  const handleDownload = async () => {
+    if (!printRef.current || !selectedTicket) return;
+
+    try {
+      const canvas = await html2canvas(printRef.current, {
+        scale: 2,
+        useCORS: true,
+        logging: false,
+      });
+
+      const imgWidth = 210; // A5 landscape width in mm
+      const imgHeight = 148; // A5 landscape height in mm
+      
+      const pdf = new jsPDF({
+        orientation: 'landscape',
+        unit: 'mm',
+        format: 'a5',
+      });
+
+      const imgData = canvas.toDataURL('image/png');
+      pdf.addImage(imgData, 'PNG', 0, 0, imgWidth, imgHeight);
+      pdf.save(`Bill-${selectedTicket.ticketNo}.pdf`);
+
+      toast({
+        title: "PDF Downloaded",
+        description: `Bill for ${selectedTicket.ticketNo} has been downloaded`,
+      });
+    } catch (error) {
+      console.error('Error generating PDF:', error);
+      toast({
+        title: "Error",
+        description: "Failed to generate PDF",
+        variant: "destructive",
+      });
+    }
   };
 
   const stats = [
@@ -227,7 +286,7 @@ export default function Dashboard() {
       </Card>
 
       <Dialog open={!!selectedTicket} onOpenChange={() => setSelectedTicket(null)}>
-        <DialogContent className="sm:max-w-[500px]">
+        <DialogContent className="sm:max-w-[900px]">
           <DialogHeader>
             <DialogTitle>Bill Details</DialogTitle>
             <DialogDescription>
@@ -274,7 +333,18 @@ export default function Dashboard() {
                 </div>
               </div>
 
-              <div className="flex gap-2 pt-4">
+              {/* Print Preview using Template */}
+              <div className="border rounded-lg overflow-auto print:border-0" style={{ maxHeight: '400px' }}>
+                <div ref={printRef}>
+                  <PrintTemplateComponent
+                    bill={convertToBill(selectedTicket)}
+                    template={template}
+                    editMode={false}
+                  />
+                </div>
+              </div>
+
+              <div className="flex gap-2 pt-4 print:hidden">
                 <Button onClick={handlePrint} className="flex-1">
                   <Printer className="mr-2 h-4 w-4" />
                   Print Bill
