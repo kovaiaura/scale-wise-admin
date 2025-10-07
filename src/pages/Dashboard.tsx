@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Scale, IndianRupee, Truck, FileText, Printer, Download } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
@@ -8,10 +8,11 @@ import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
 import { useAccessControl } from '@/contexts/AccessControlContext';
-import { mockDashboardStats, mockTickets, WeighmentTicket } from '@/utils/mockData';
+import { mockDashboardStats } from '@/utils/mockData';
 import { PrintTemplateComponent } from '@/components/print/PrintTemplate';
 import { printTemplateService } from '@/services/printTemplateService';
 import { Bill } from '@/types/weighment';
+import { getBills } from '@/services/billService';
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
 import {
@@ -65,7 +66,8 @@ const item = {
 };
 
 export default function Dashboard() {
-  const [selectedTicket, setSelectedTicket] = useState<WeighmentTicket | null>(null);
+  const [selectedTicket, setSelectedTicket] = useState<Bill | null>(null);
+  const [recentBills, setRecentBills] = useState<Bill[]>([]);
   const { toast } = useToast();
   const { user } = useAuth();
   const { checkAccess, showBlockedDialog } = useAccessControl();
@@ -73,26 +75,14 @@ export default function Dashboard() {
   const template = printTemplateService.loadTemplate();
   const navigate = useNavigate();
 
-  // Convert WeighmentTicket to Bill for printing
-  const convertToBill = (ticket: WeighmentTicket): Bill => ({
-    id: ticket.id,
-    billNo: `BILL-${ticket.ticketNo}`,
-    ticketNo: ticket.ticketNo,
-    vehicleNo: ticket.vehicleNo,
-    partyName: ticket.partyName,
-    productName: ticket.productName,
-    grossWeight: ticket.grossWeight,
-    tareWeight: ticket.tareWeight,
-    netWeight: ticket.netWeight,
-    charges: 0,
-    capturedImage: null,
-    frontImage: 'https://images.unsplash.com/photo-1511527844068-006b95d162c8?w=400',
-    rearImage: 'https://images.unsplash.com/photo-1519003722824-194d4455a60c?w=400',
-    status: 'CLOSED',
-    createdAt: `${ticket.date}T${ticket.time}`,
-    updatedAt: `${ticket.date}T${ticket.time}`,
-    firstWeightType: 'gross',
-  });
+  useEffect(() => {
+    const bills = getBills();
+    // Get the 5 most recent bills (newest first)
+    const sortedBills = bills
+      .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+      .slice(0, 5);
+    setRecentBills(sortedBills);
+  }, []);
 
   const handlePrint = async () => {
     if (!checkAccess(user?.role)) {
@@ -334,32 +324,40 @@ export default function Dashboard() {
                 </tr>
               </thead>
               <tbody>
-                {mockTickets.slice(0, 5).map((ticket) => (
-                  <tr 
-                    key={ticket.id} 
-                    onClick={() => setSelectedTicket(ticket)}
-                    className="border-b hover:bg-muted/50 transition-colors cursor-pointer"
-                  >
-                    <td className="p-3 text-sm font-medium">{ticket.ticketNo}</td>
-                    <td className="p-3 text-sm">{ticket.vehicleNo}</td>
-                    <td className="p-3 text-sm">{ticket.partyName}</td>
-                    <td className="p-3 text-sm">{ticket.productName}</td>
-                    <td className="p-3 text-sm text-right font-mono">{ticket.netWeight} kg</td>
-                    <td className="p-3 text-right">
-                      <span
-                        className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                          ticket.status === 'completed'
-                            ? 'bg-success/10 text-success'
-                            : ticket.status === 'in-progress'
-                            ? 'bg-warning/10 text-warning'
-                            : 'bg-muted text-muted-foreground'
-                        }`}
-                      >
-                        {ticket.status}
-                      </span>
+                {recentBills.length > 0 ? (
+                  recentBills.map((bill) => (
+                    <tr 
+                      key={bill.id} 
+                      onClick={() => setSelectedTicket(bill)}
+                      className="border-b hover:bg-muted/50 transition-colors cursor-pointer"
+                    >
+                      <td className="p-3 text-sm font-medium">{bill.billNo}</td>
+                      <td className="p-3 text-sm">{bill.vehicleNo}</td>
+                      <td className="p-3 text-sm">{bill.partyName}</td>
+                      <td className="p-3 text-sm">{bill.productName}</td>
+                      <td className="p-3 text-sm text-right font-mono">{bill.netWeight || 0} kg</td>
+                      <td className="p-3 text-right">
+                        <span
+                          className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                            bill.status === 'CLOSED' || bill.status === 'PRINTED'
+                              ? 'bg-success/10 text-success'
+                              : bill.status === 'OPEN'
+                              ? 'bg-warning/10 text-warning'
+                              : 'bg-muted text-muted-foreground'
+                          }`}
+                        >
+                          {bill.status}
+                        </span>
+                      </td>
+                    </tr>
+                  ))
+                ) : (
+                  <tr>
+                    <td colSpan={6} className="p-6 text-center text-muted-foreground">
+                      No bills found
                     </td>
                   </tr>
-                ))}
+                )}
               </tbody>
             </table>
           </div>
@@ -371,7 +369,7 @@ export default function Dashboard() {
           <DialogHeader>
             <DialogTitle>Bill Details</DialogTitle>
             <DialogDescription>
-              View and manage bill {selectedTicket?.ticketNo}
+              View and manage bill {selectedTicket?.billNo}
             </DialogDescription>
           </DialogHeader>
           
@@ -379,8 +377,8 @@ export default function Dashboard() {
             <div className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <p className="text-sm text-muted-foreground">Ticket No</p>
-                  <p className="font-medium">{selectedTicket.ticketNo}</p>
+                  <p className="text-sm text-muted-foreground">Bill No</p>
+                  <p className="font-medium">{selectedTicket.billNo}</p>
                 </div>
                 <div>
                   <p className="text-sm text-muted-foreground">Vehicle</p>
@@ -395,16 +393,24 @@ export default function Dashboard() {
                   <p className="font-medium">{selectedTicket.productName}</p>
                 </div>
                 <div>
+                  <p className="text-sm text-muted-foreground">Gross Weight</p>
+                  <p className="font-medium font-mono">{selectedTicket.grossWeight || 0} kg</p>
+                </div>
+                <div>
+                  <p className="text-sm text-muted-foreground">Tare Weight</p>
+                  <p className="font-medium font-mono">{selectedTicket.tareWeight || 0} kg</p>
+                </div>
+                <div>
                   <p className="text-sm text-muted-foreground">Net Weight</p>
-                  <p className="font-medium font-mono">{selectedTicket.netWeight} kg</p>
+                  <p className="font-medium font-mono">{selectedTicket.netWeight || 0} kg</p>
                 </div>
                 <div>
                   <p className="text-sm text-muted-foreground">Status</p>
                   <span
                     className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                      selectedTicket.status === 'completed'
+                      selectedTicket.status === 'CLOSED' || selectedTicket.status === 'PRINTED'
                         ? 'bg-success/10 text-success'
-                        : selectedTicket.status === 'in-progress'
+                        : selectedTicket.status === 'OPEN'
                         ? 'bg-warning/10 text-warning'
                         : 'bg-muted text-muted-foreground'
                     }`}
@@ -418,7 +424,7 @@ export default function Dashboard() {
               <div className="border rounded-lg overflow-auto print:border-0" style={{ maxHeight: '400px' }}>
                 <div ref={printRef}>
                   <PrintTemplateComponent
-                    bill={convertToBill(selectedTicket)}
+                    bill={selectedTicket}
                     template={template}
                     editMode={false}
                   />
