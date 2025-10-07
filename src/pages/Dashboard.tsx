@@ -36,6 +36,21 @@ const chartData = [
   { day: 'Sun', weighments: 8 },
 ];
 
+const monthlyAmountData = [
+  { month: 'Jan', amount: 125000 },
+  { month: 'Feb', amount: 142000 },
+  { month: 'Mar', amount: 138000 },
+  { month: 'Apr', amount: 165000 },
+  { month: 'May', amount: 158000 },
+  { month: 'Jun', amount: 172000 },
+  { month: 'Jul', amount: 168000 },
+  { month: 'Aug', amount: 185000 },
+  { month: 'Sep', amount: 192000 },
+  { month: 'Oct', amount: 178000 },
+  { month: 'Nov', amount: 195000 },
+  { month: 'Dec', amount: 210000 },
+];
+
 const container = {
   hidden: { opacity: 0 },
   show: {
@@ -269,24 +284,28 @@ export default function Dashboard() {
 
         <Card className="card-shadow">
           <CardHeader>
-            <CardTitle>Weight Trend</CardTitle>
+            <CardTitle>Monthly Amount</CardTitle>
           </CardHeader>
           <CardContent>
             <ResponsiveContainer width="100%" height={300}>
-              <LineChart data={chartData}>
+              <LineChart data={monthlyAmountData}>
                 <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                <XAxis dataKey="day" stroke="hsl(var(--muted-foreground))" />
-                <YAxis stroke="hsl(var(--muted-foreground))" />
+                <XAxis dataKey="month" stroke="hsl(var(--muted-foreground))" />
+                <YAxis 
+                  stroke="hsl(var(--muted-foreground))" 
+                  tickFormatter={(value) => `₹${(value / 1000).toFixed(0)}k`}
+                />
                 <Tooltip
                   contentStyle={{
                     backgroundColor: 'hsl(var(--card))',
                     border: '1px solid hsl(var(--border))',
                     borderRadius: '0.5rem',
                   }}
+                  formatter={(value: number) => [`₹${value.toLocaleString()}`, 'Amount']}
                 />
                 <Line
                   type="monotone"
-                  dataKey="weighments"
+                  dataKey="amount"
                   stroke="hsl(var(--primary))"
                   strokeWidth={2}
                   dot={{ fill: 'hsl(var(--primary))' }}
