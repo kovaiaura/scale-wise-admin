@@ -16,7 +16,7 @@ export default function OperatorConsole() {
       {isAccessBlocked && user?.role !== 'super_admin' && (
         <Alert variant="destructive">
           <Lock className="h-4 w-4" />
-          <AlertTitle>Limited Access Mode</AlertTitle>
+          <AlertTitle>Your access has been temporarily suspended</AlertTitle>
           <AlertDescription>
             Some features are currently restricted. Contact your administrator to restore access.
           </AlertDescription>
