@@ -225,7 +225,7 @@ export default function Dashboard() {
               className={`card-shadow hover:shadow-elevated transition-shadow ${
                 stat.title === 'Pending Tickets' ? 'cursor-pointer' : ''
               }`}
-              onClick={() => stat.title === 'Pending Tickets' && navigate('/operator-console')}
+              onClick={() => stat.title === 'Pending Tickets' && navigate('/operator')}
             >
               <CardHeader className="flex flex-row items-center justify-between pb-2">
                 <CardTitle className="text-sm font-medium text-muted-foreground">
