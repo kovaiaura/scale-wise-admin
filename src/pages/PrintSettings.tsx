@@ -31,6 +31,7 @@ const SAMPLE_BILL: Bill = {
   createdAt: new Date().toISOString(),
   updatedAt: new Date().toISOString(),
   firstWeightType: 'gross',
+  firstVehicleStatus: 'load',
 };
 
 export default function PrintSettings() {
@@ -139,6 +140,7 @@ export default function PrintSettings() {
     vehicleNo: 'Vehicle Number',
     customerName: 'Customer Name',
     material: 'Material',
+    vehicleStatus: 'Vehicle Status',
     firstWeight: '1st Weight',
     secondWeight: '2nd Weight',
     netWeight: 'Net Weight',

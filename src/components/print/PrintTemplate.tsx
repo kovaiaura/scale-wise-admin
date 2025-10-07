@@ -122,6 +122,7 @@ export const PrintTemplateComponent = forwardRef<HTMLDivElement, PrintTemplatePr
         {renderField('vehicleNo', bill.vehicleNo, 'Vehicle No')}
         {renderField('customerName', bill.partyName, 'Customer')}
         {renderField('material', bill.productName, 'Material')}
+        {renderField('vehicleStatus', bill.firstVehicleStatus || bill.secondVehicleStatus || 'N/A', 'Vehicle Status')}
         {renderField(
           'firstWeight',
           formatWeight(bill.firstWeightType === 'gross' ? bill.grossWeight : bill.tareWeight),

@@ -25,6 +25,7 @@ export interface PrintTemplate {
     vehicleNo: FieldPosition;
     customerName: FieldPosition;
     material: FieldPosition;
+    vehicleStatus: FieldPosition;
     firstWeight: FieldPosition;
     secondWeight: FieldPosition;
     netWeight: FieldPosition;
@@ -47,11 +48,12 @@ export const DEFAULT_TEMPLATE: PrintTemplate = {
     vehicleNo: { x: 50, y: 80, fontSize: 14, fontWeight: 'bold', align: 'left' },
     customerName: { x: 50, y: 110, fontSize: 12, align: 'left' },
     material: { x: 50, y: 140, fontSize: 12, align: 'left' },
-    firstWeight: { x: 50, y: 200, fontSize: 16, fontWeight: 'bold', align: 'left' },
-    secondWeight: { x: 250, y: 200, fontSize: 16, fontWeight: 'bold', align: 'left' },
-    netWeight: { x: 450, y: 200, fontSize: 18, fontWeight: 'bold', align: 'left' },
-    dateTime: { x: 50, y: 500, fontSize: 10, align: 'left' },
-    amount: { x: 50, y: 530, fontSize: 14, fontWeight: 'bold', align: 'left' },
+    vehicleStatus: { x: 50, y: 170, fontSize: 12, fontWeight: 'bold', align: 'left' },
+    firstWeight: { x: 50, y: 230, fontSize: 16, fontWeight: 'bold', align: 'left' },
+    secondWeight: { x: 250, y: 230, fontSize: 16, fontWeight: 'bold', align: 'left' },
+    netWeight: { x: 450, y: 230, fontSize: 18, fontWeight: 'bold', align: 'left' },
+    dateTime: { x: 50, y: 450, fontSize: 12, align: 'left' },
+    amount: { x: 50, y: 480, fontSize: 14, fontWeight: 'bold', align: 'left' },
   },
   frontImage: {
     x: 500,
