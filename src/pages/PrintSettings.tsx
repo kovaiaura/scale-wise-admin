@@ -26,7 +26,7 @@ const SAMPLE_BILL: Bill = {
   charges: 150,
   capturedImage: null,
   frontImage: 'https://images.unsplash.com/photo-1511527844068-006b95d162c8?w=400',
-  rearImage: null,
+  rearImage: 'https://images.unsplash.com/photo-1519003722824-194d4455a60c?w=400',
   status: 'CLOSED',
   createdAt: new Date().toISOString(),
   updatedAt: new Date().toISOString(),

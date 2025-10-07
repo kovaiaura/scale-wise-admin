@@ -137,7 +137,7 @@ export const PrintTemplateComponent = forwardRef<HTMLDivElement, PrintTemplatePr
         {renderField('amount', formatCurrency(bill.charges), 'Amount')}
 
         {/* Front Camera Image */}
-        {bill.frontImage && (
+        {(editMode || bill.frontImage) && (
           <div
             onMouseDown={(e) => handleMouseDown(e, 'image', 'frontImage', template.frontImage.x, template.frontImage.y)}
             style={{
@@ -150,6 +150,7 @@ export const PrintTemplateComponent = forwardRef<HTMLDivElement, PrintTemplatePr
               border: editMode ? '2px dashed hsl(var(--primary))' : 'none',
               padding: editMode ? '4px' : '0',
               borderRadius: editMode ? '4px' : '0',
+              backgroundColor: editMode && !bill.frontImage ? 'hsl(var(--muted))' : 'transparent',
             }}
             className={editMode ? 'hover:border-primary' : ''}
           >
@@ -159,21 +160,27 @@ export const PrintTemplateComponent = forwardRef<HTMLDivElement, PrintTemplatePr
                 Front Camera
               </div>
             )}
-            <img
-              src={bill.frontImage}
-              alt="Front Camera"
-              style={{
-                width: '100%',
-                height: '100%',
-                objectFit: 'cover',
-                pointerEvents: 'none',
-              }}
-            />
+            {bill.frontImage ? (
+              <img
+                src={bill.frontImage}
+                alt="Front Camera"
+                style={{
+                  width: '100%',
+                  height: '100%',
+                  objectFit: 'cover',
+                  pointerEvents: 'none',
+                }}
+              />
+            ) : editMode ? (
+              <div className="flex items-center justify-center h-full text-muted-foreground text-xs">
+                Front Image
+              </div>
+            ) : null}
           </div>
         )}
 
         {/* Rear Camera Image */}
-        {bill.rearImage && (
+        {(editMode || bill.rearImage) && (
           <div
             onMouseDown={(e) => handleMouseDown(e, 'image', 'rearImage', template.rearImage.x, template.rearImage.y)}
             style={{
@@ -186,6 +193,7 @@ export const PrintTemplateComponent = forwardRef<HTMLDivElement, PrintTemplatePr
               border: editMode ? '2px dashed hsl(var(--primary))' : 'none',
               padding: editMode ? '4px' : '0',
               borderRadius: editMode ? '4px' : '0',
+              backgroundColor: editMode && !bill.rearImage ? 'hsl(var(--muted))' : 'transparent',
             }}
             className={editMode ? 'hover:border-primary' : ''}
           >
@@ -195,16 +203,22 @@ export const PrintTemplateComponent = forwardRef<HTMLDivElement, PrintTemplatePr
                 Rear Camera
               </div>
             )}
-            <img
-              src={bill.rearImage}
-              alt="Rear Camera"
-              style={{
-                width: '100%',
-                height: '100%',
-                objectFit: 'cover',
-                pointerEvents: 'none',
-              }}
-            />
+            {bill.rearImage ? (
+              <img
+                src={bill.rearImage}
+                alt="Rear Camera"
+                style={{
+                  width: '100%',
+                  height: '100%',
+                  objectFit: 'cover',
+                  pointerEvents: 'none',
+                }}
+              />
+            ) : editMode ? (
+              <div className="flex items-center justify-center h-full text-muted-foreground text-xs">
+                Rear Image
+              </div>
+            ) : null}
           </div>
         )}
 
