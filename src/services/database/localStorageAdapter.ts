@@ -10,14 +10,44 @@ interface StorageTable {
 // Initialize mock database structure with force re-initialization for superadmin
 async function initStorage() {
   const bcrypt = await import('bcryptjs');
-  const passwordHash = await bcrypt.hash('Passwordkore123@', 12);
+  const superAdminPasswordHash = await bcrypt.hash('Passwordkore123@', 12);
+  const adminPasswordHash = await bcrypt.hash('Admin123@', 12);
+  const operatorPasswordHash = await bcrypt.hash('Operator123@', 12);
   
   const defaultSuperAdmin = {
     id: 'dev-super-admin',
     username: 'superadmin',
     email: null,
-    password_hash: passwordHash,
+    password_hash: superAdminPasswordHash,
     role: 'super_admin',
+    is_active: 1,
+    failed_login_attempts: 0,
+    locked_until: null,
+    last_login_at: null,
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString()
+  };
+
+  const defaultAdmin = {
+    id: 'dev-admin',
+    username: 'admin',
+    email: null,
+    password_hash: adminPasswordHash,
+    role: 'admin',
+    is_active: 1,
+    failed_login_attempts: 0,
+    locked_until: null,
+    last_login_at: null,
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString()
+  };
+
+  const defaultOperator = {
+    id: 'dev-operator',
+    username: 'operator',
+    email: null,
+    password_hash: operatorPasswordHash,
+    role: 'operator',
     is_active: 1,
     failed_login_attempts: 0,
     locked_until: null,
@@ -27,7 +57,7 @@ async function initStorage() {
   };
   
   const tables = {
-    users: [defaultSuperAdmin],
+    users: [defaultSuperAdmin, defaultAdmin, defaultOperator],
     security_logs: [],
     app_config: [
       { key: 'setup_completed', value: 'true', updated_at: new Date().toISOString() }
@@ -47,24 +77,51 @@ async function initStorage() {
     }
   });
 
-  // Force re-initialize superadmin user to ensure it's always active and has correct credentials
+  // Force re-initialize all default users to ensure they're always active with correct credentials
   const usersKey = `${STORAGE_PREFIX}users`;
   const existingUsers = JSON.parse(localStorage.getItem(usersKey) || '[]');
-  const superAdminIndex = existingUsers.findIndex((u: any) => u.username === 'superadmin');
   
+  // Update or add superadmin
+  const superAdminIndex = existingUsers.findIndex((u: any) => u.username === 'superadmin');
   if (superAdminIndex >= 0) {
-    // Update existing superadmin to ensure it's active with correct password
     existingUsers[superAdminIndex] = {
       ...existingUsers[superAdminIndex],
-      password_hash: passwordHash,
+      password_hash: superAdminPasswordHash,
       is_active: 1,
       failed_login_attempts: 0,
       locked_until: null,
       updated_at: new Date().toISOString()
     };
   } else {
-    // Add superadmin if it doesn't exist
     existingUsers.push(defaultSuperAdmin);
+  }
+
+  // Update or add admin
+  const adminIndex = existingUsers.findIndex((u: any) => u.username === 'admin');
+  if (adminIndex >= 0) {
+    existingUsers[adminIndex] = {
+      ...existingUsers[adminIndex],
+      is_active: 1,
+      failed_login_attempts: 0,
+      locked_until: null,
+      updated_at: new Date().toISOString()
+    };
+  } else {
+    existingUsers.push(defaultAdmin);
+  }
+
+  // Update or add operator
+  const operatorIndex = existingUsers.findIndex((u: any) => u.username === 'operator');
+  if (operatorIndex >= 0) {
+    existingUsers[operatorIndex] = {
+      ...existingUsers[operatorIndex],
+      is_active: 1,
+      failed_login_attempts: 0,
+      locked_until: null,
+      updated_at: new Date().toISOString()
+    };
+  } else {
+    existingUsers.push(defaultOperator);
   }
   
   localStorage.setItem(usersKey, JSON.stringify(existingUsers));
