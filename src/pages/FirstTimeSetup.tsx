@@ -15,7 +15,11 @@ import { useToast } from '@/hooks/use-toast';
 
 type SetupStep = 'welcome' | 'account' | 'password' | 'success';
 
-export default function FirstTimeSetup() {
+interface FirstTimeSetupProps {
+  onSetupComplete?: () => void;
+}
+
+export default function FirstTimeSetup({ onSetupComplete }: FirstTimeSetupProps) {
   const navigate = useNavigate();
   const { toast } = useToast();
   
@@ -85,6 +89,10 @@ export default function FirstTimeSetup() {
       await markSetupCompleted();
       await logSecurityEvent('SETUP_COMPLETED', userId, 'Initial super admin account created');
 
+      if (onSetupComplete) {
+        onSetupComplete();
+      }
+
       setCurrentStep('success');
     } catch (err: any) {
       console.error('Setup failed:', err);
@@ -95,7 +103,7 @@ export default function FirstTimeSetup() {
   };
 
   const handleFinish = () => {
-    navigate('/login');
+    window.location.href = '/login';
   };
 
   const stepVariants = {

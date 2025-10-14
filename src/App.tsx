@@ -52,7 +52,7 @@ const AppContent = () => {
   }, []);
 
   if (isCheckingSetup) return <LoadingScreen />;
-  if (setupCompleted === false) return <FirstTimeSetup />;
+  if (setupCompleted === false) return <FirstTimeSetup onSetupComplete={() => setSetupCompleted(true)} />;
 
   return (
     <>
