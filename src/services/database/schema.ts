@@ -108,6 +108,7 @@ INSERT OR IGNORE INTO app_config (key, value) VALUES ('serial_number', '0');
 INSERT OR IGNORE INTO app_config (key, value) VALUES ('auto_backup_enabled', 'true');
 INSERT OR IGNORE INTO app_config (key, value) VALUES ('auto_backup_time', '02:00');
 INSERT OR IGNORE INTO app_config (key, value) VALUES ('backup_retention_days', '30');
+INSERT OR IGNORE INTO app_config (key, value) VALUES ('serial_number_config', '{"prefix":"WB","separator":"-","includeYear":true,"includeMonth":false,"yearFormat":"YYYY","counterStart":1,"counterPadding":3,"currentCounter":1,"resetFrequency":"yearly"}');
 `;
 
 export const DATABASE_VERSION = 1;

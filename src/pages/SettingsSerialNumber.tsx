@@ -8,7 +8,7 @@ import { Switch } from '@/components/ui/switch';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Save, Eye, RotateCcw, Hash, AlertCircle } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import { getSerialNumberConfig, updateSerialNumberConfig, previewSerialNumber } from '@/services/api/serialNumberService';
+import { SerialNumberService } from '@/services/unifiedServices';
 
 interface SerialNumberConfig {
   prefix: string;
@@ -50,7 +50,7 @@ export default function SettingsSerialNumber() {
 
   const loadConfig = async () => {
     setLoading(true);
-    const { data, error } = await getSerialNumberConfig();
+    const { data, error } = await SerialNumberService.getConfig();
     if (data) {
       setConfig(data);
     } else if (error) {
@@ -85,7 +85,7 @@ export default function SettingsSerialNumber() {
 
   const handleSave = async () => {
     setSaving(true);
-    const { data, error } = await updateSerialNumberConfig(config);
+    const { data, error } = await SerialNumberService.updateConfig(config);
     if (data) {
       toast({
         title: 'Success',
@@ -108,7 +108,7 @@ export default function SettingsSerialNumber() {
     }
     
     setSaving(true);
-    const { data, error } = await updateSerialNumberConfig({
+    const { data, error } = await SerialNumberService.updateConfig({
       ...config,
       resetCounterNow: true,
     });

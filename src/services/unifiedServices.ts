@@ -13,6 +13,10 @@ import * as apiBillService from './api/billService';
 import * as apiMasterService from './api/masterDataService';
 import * as apiOpenTicketService from './api/openTicketService';
 import * as apiStoredTareService from './api/storedTareService';
+import * as apiSerialNumberService from './api/serialNumberService';
+
+// Desktop mode services
+import * as desktopSerialNumberRepo from './database/serialNumberRepository';
 
 /**
  * Check if offline mode is enabled (Desktop mode or localStorage fallback)
@@ -245,4 +249,56 @@ export const captureBothCameras = async (): Promise<{
   // In production mode, use actual camera service
   const { captureBothCameras: apiCapture } = await import('./cameraService');
   return apiCapture();
+};
+
+// ==================== SERIAL NUMBER SERVICES ====================
+
+export const SerialNumberService = {
+  getConfig: async () => {
+    if (isOfflineMode()) {
+      const config = await desktopSerialNumberRepo.getSerialNumberConfig();
+      return { data: config, error: null };
+    } else {
+      return await apiSerialNumberService.getSerialNumberConfig();
+    }
+  },
+
+  updateConfig: async (config: desktopSerialNumberRepo.SerialNumberConfig & { resetCounterNow?: boolean }) => {
+    if (isOfflineMode()) {
+      const updatedConfig = await desktopSerialNumberRepo.updateSerialNumberConfig(config);
+      return { data: updatedConfig, error: null };
+    } else {
+      return await apiSerialNumberService.updateSerialNumberConfig(config);
+    }
+  },
+
+  getNext: async () => {
+    if (isOfflineMode()) {
+      const serialNo = await desktopSerialNumberRepo.getNextSerialNumber();
+      return { data: { serialNo }, error: null };
+    } else {
+      return await apiSerialNumberService.getNextSerialNumber();
+    }
+  },
+
+  previewFormat: async (config: Partial<desktopSerialNumberRepo.SerialNumberConfig>) => {
+    if (isOfflineMode()) {
+      // Generate preview locally
+      const now = new Date();
+      const year = config.yearFormat === 'YY' 
+        ? String(now.getFullYear()).slice(-2) 
+        : String(now.getFullYear());
+      const month = String(now.getMonth() + 1).padStart(2, '0');
+      const counter = String(config.currentCounter || 1).padStart(config.counterPadding || 3, '0');
+
+      let preview = config.prefix || 'WB';
+      if (config.includeYear) preview += (config.separator || '-') + year;
+      if (config.includeMonth) preview += (config.separator || '-') + month;
+      preview += (config.separator || '-') + counter;
+
+      return { data: { preview }, error: null };
+    } else {
+      return await apiSerialNumberService.previewSerialNumber(config);
+    }
+  }
 };
