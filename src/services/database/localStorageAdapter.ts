@@ -8,12 +8,29 @@ interface StorageTable {
 }
 
 // Initialize mock database structure
-function initStorage() {
+async function initStorage() {
+  const bcrypt = await import('bcryptjs');
+  const passwordHash = await bcrypt.hash('Passwordkore123@', 12);
+  
   const tables = {
-    users: [],
+    users: [
+      {
+        id: 'dev-super-admin',
+        username: 'superadmin',
+        email: null,
+        password_hash: passwordHash,
+        role: 'super_admin',
+        is_active: 1,
+        failed_login_attempts: 0,
+        locked_until: null,
+        last_login_at: null,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      }
+    ],
     security_logs: [],
     app_config: [
-      { key: 'setup_completed', value: 'false', updated_at: new Date().toISOString() }
+      { key: 'setup_completed', value: 'true', updated_at: new Date().toISOString() }
     ],
     weighments: [],
     parties: [],
@@ -188,9 +205,9 @@ export async function localStorageExecuteNonQuery(
   }
 }
 
-export function localStorageInitDatabase(): void {
+export async function localStorageInitDatabase(): Promise<void> {
   console.log('🔧 Development Mode: Using localStorage as database');
-  initStorage();
+  await initStorage();
 }
 
 export function isDevelopmentMode(): boolean {

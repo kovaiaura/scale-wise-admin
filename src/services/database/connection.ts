@@ -26,7 +26,7 @@ async function invoke<T = any>(cmd: string, args?: any): Promise<T> {
  */
 export async function initDatabase(): Promise<void> {
   if (isDevelopmentMode()) {
-    localStorageInitDatabase();
+    await localStorageInitDatabase();
     console.log('✅ Database initialized (Development Mode - localStorage)');
     return;
   }
