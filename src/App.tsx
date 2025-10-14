@@ -6,7 +6,6 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider } from "./contexts/AuthContext";
 import { NotificationProvider } from "./contexts/NotificationContext";
-import { AccessControlProvider } from "./contexts/AccessControlContext";
 import { AppLayout } from "./components/layout/AppLayout";
 import Login from "./pages/Login";
 import Dashboard from "./pages/Dashboard";
@@ -19,19 +18,15 @@ import MastersProducts from "./pages/MastersProducts";
 import SettingsWeighbridge from "./pages/SettingsWeighbridge";
 import SettingsSerialNumber from "./pages/SettingsSerialNumber";
 import SettingsProfile from "./pages/SettingsProfile";
-import SettingsUsers from "./pages/SettingsUsers";
 import PrintSettings from "./pages/PrintSettings";
 import NotFound from "./pages/NotFound";
 import FirstTimeSetup from "./pages/FirstTimeSetup";
-import AccessBlockedDialog from "./components/operator/AccessBlockedDialog";
 import { LoadingScreen } from "./components/setup/LoadingScreen";
-import { useAccessControl } from "./contexts/AccessControlContext";
 import { initDatabase, checkSetupStatus } from "./services/database/connection";
 
 const queryClient = new QueryClient();
 
 const AppContent = () => {
-  const { isDialogOpen, closeDialog, blockedMessage } = useAccessControl();
   const [setupCompleted, setSetupCompleted] = useState<boolean | null>(null);
   const [isCheckingSetup, setIsCheckingSetup] = useState(true);
 
@@ -71,16 +66,10 @@ const AppContent = () => {
           <Route path="settings/weighbridge" element={<SettingsWeighbridge />} />
           <Route path="settings/serial-number" element={<SettingsSerialNumber />} />
           <Route path="settings/print-template" element={<PrintSettings />} />
-          <Route path="settings/users" element={<SettingsUsers />} />
           <Route path="settings/profile" element={<SettingsProfile />} />
         </Route>
         <Route path="*" element={<NotFound />} />
       </Routes>
-      <AccessBlockedDialog 
-        open={isDialogOpen} 
-        onOpenChange={closeDialog}
-        message={blockedMessage}
-      />
     </>
   );
 };
@@ -92,11 +81,9 @@ const App = () => (
         <Toaster />
         <Sonner />
         <AuthProvider>
-          <AccessControlProvider>
-            <NotificationProvider>
-              <AppContent />
-            </NotificationProvider>
-          </AccessControlProvider>
+          <NotificationProvider>
+            <AppContent />
+          </NotificationProvider>
         </AuthProvider>
       </TooltipProvider>
     </QueryClientProvider>

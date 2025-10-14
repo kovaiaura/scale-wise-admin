@@ -1,7 +1,6 @@
 import { useState } from 'react';
 import { Plus, Search, Edit, Trash2, Lock } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
-import { useAccessControl } from '@/contexts/AccessControlContext';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -23,7 +22,6 @@ export default function MastersProducts() {
   });
   const { toast } = useToast();
   const { user } = useAuth();
-  const { checkAccess, showBlockedDialog } = useAccessControl();
 
   const filteredProducts = products.filter(
     (product) =>
@@ -37,7 +35,6 @@ export default function MastersProducts() {
   };
 
   const handleSave = () => {
-    if (!checkAccess(user?.role)) { showBlockedDialog(); return; }
     if (!formData.productName || !formData.category || !formData.unit) {
       toast({
         title: "Error",
@@ -79,7 +76,6 @@ export default function MastersProducts() {
   };
 
   const handleUpdate = () => {
-    if (!checkAccess(user?.role)) { showBlockedDialog(); return; }
     if (!selectedProduct.productName || !selectedProduct.category || !selectedProduct.unit) {
       toast({
         title: "Error",
@@ -102,7 +98,6 @@ export default function MastersProducts() {
 
   const handleDelete = (productId: string, e: React.MouseEvent) => {
     e.stopPropagation();
-    if (!checkAccess(user?.role)) { showBlockedDialog(); return; }
     setProducts(products.filter(p => p.id !== productId));
     toast({
       title: "Success",
@@ -117,8 +112,7 @@ export default function MastersProducts() {
           <h1 className="text-3xl font-bold">Materials</h1>
           <p className="text-muted-foreground">Manage materials master data</p>
         </div>
-        <Button onClick={() => setIsDialogOpen(true)} disabled={!checkAccess(user?.role)}>
-          {!checkAccess(user?.role) && <Lock className="mr-2 h-4 w-4" />}
+        <Button onClick={() => setIsDialogOpen(true)}>
           <Plus className="mr-2 h-4 w-4" />
           Add Material
         </Button>

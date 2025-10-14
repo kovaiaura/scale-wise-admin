@@ -11,7 +11,6 @@ import { Badge } from '@/components/ui/badge';
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { useAuth } from '@/contexts/AuthContext';
-import { useAccessControl } from '@/contexts/AccessControlContext';
 import { mockTickets } from '@/utils/mockData';
 import { getVehicles, getParties } from '@/services/masterDataService';
 import { getUniqueVehiclesFromBills, getUniquePartiesFromBills } from '@/services/dynamicDataService';
@@ -36,7 +35,6 @@ export default function Reports() {
   const [exportFormat, setExportFormat] = useState<ExportFormat>('excel');
   const { toast } = useToast();
   const { user } = useAuth();
-  const { checkAccess, showBlockedDialog, isAccessBlocked } = useAccessControl();
 
   // Combine master data with walk-in entries from bills
   const allVehicles = useMemo(() => {
@@ -91,11 +89,6 @@ export default function Reports() {
   };
 
   const handleGenerateReport = () => {
-    if (!checkAccess(user?.role)) {
-      showBlockedDialog();
-      return;
-    }
-
     if (!selectedVehicle && !selectedParty) {
       toast({
         title: "Selection Required",
@@ -111,11 +104,6 @@ export default function Reports() {
   };
 
   const handleExportClick = (format: ExportFormat) => {
-    if (!checkAccess(user?.role)) {
-      showBlockedDialog();
-      return;
-    }
-
     if (!selectedVehicle && !selectedParty) {
       toast({
         title: "Selection Required",
@@ -268,16 +256,6 @@ export default function Reports() {
 
   return (
     <div className="space-y-6">
-      {isAccessBlocked && user?.role !== 'super_admin' && (
-        <Alert variant="destructive">
-          <Lock className="h-4 w-4" />
-          <AlertTitle>Your access has been temporarily suspended</AlertTitle>
-          <AlertDescription>
-            Report generation and export features are currently restricted. Contact your administrator to restore access.
-          </AlertDescription>
-        </Alert>
-      )}
-
       <div>
         <h1 className="text-3xl font-bold">Reports</h1>
         <p className="text-muted-foreground">Generate and export weighment reports</p>

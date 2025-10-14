@@ -7,7 +7,6 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
-import { useAccessControl } from '@/contexts/AccessControlContext';
 import { mockDashboardStats } from '@/utils/mockData';
 import { PrintTemplateComponent } from '@/components/print/PrintTemplate';
 import { printTemplateService } from '@/services/printTemplateService';
@@ -70,7 +69,6 @@ export default function Dashboard() {
   const [recentBills, setRecentBills] = useState<Bill[]>([]);
   const { toast } = useToast();
   const { user } = useAuth();
-  const { checkAccess, showBlockedDialog } = useAccessControl();
   const printRef = useRef<HTMLDivElement>(null);
   const template = printTemplateService.loadTemplate();
   const navigate = useNavigate();
@@ -85,11 +83,6 @@ export default function Dashboard() {
   }, []);
 
   const handlePrint = async () => {
-    if (!checkAccess(user?.role)) {
-      showBlockedDialog();
-      return;
-    }
-
     if (!printRef.current || !selectedTicket) return;
 
     try {
@@ -139,11 +132,6 @@ export default function Dashboard() {
   };
 
   const handleDownload = async () => {
-    if (!checkAccess(user?.role)) {
-      showBlockedDialog();
-      return;
-    }
-
     if (!printRef.current || !selectedTicket) return;
 
     try {

@@ -7,7 +7,6 @@ import { Badge } from '@/components/ui/badge';
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { useAuth } from '@/contexts/AuthContext';
-import { useAccessControl } from '@/contexts/AccessControlContext';
 import { getBills } from '@/services/billService';
 import { Bill } from '@/types/weighment';
 import BillPrintView from '@/components/operator/BillPrintView';
@@ -17,7 +16,6 @@ export default function Weighments() {
   const [bills, setBills] = useState<Bill[]>([]);
   const [selectedBill, setSelectedBill] = useState<Bill | null>(null);
   const { user } = useAuth();
-  const { checkAccess, showBlockedDialog, isAccessBlocked } = useAccessControl();
 
   useEffect(() => {
     loadBills();
@@ -36,51 +34,20 @@ export default function Weighments() {
   );
 
   const handleExport = () => {
-    if (!checkAccess(user?.role)) {
-      showBlockedDialog();
-      return;
-    }
     // Export logic here
-  };
-
-  const handleSearch = (value: string) => {
-    if (!checkAccess(user?.role)) {
-      showBlockedDialog();
-      return;
-    }
-    setSearchTerm(value);
   };
 
   return (
     <div className="space-y-6">
-      {isAccessBlocked && user?.role !== 'super_admin' && (
-        <Alert variant="destructive">
-          <Lock className="h-4 w-4" />
-          <AlertTitle>Your access has been temporarily suspended</AlertTitle>
-          <AlertDescription>
-            Search, export, and print features are currently restricted. Contact your administrator to restore access.
-          </AlertDescription>
-        </Alert>
-      )}
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold">Weighments</h1>
           <p className="text-muted-foreground">Manage all weighment tickets</p>
         </div>
-        <TooltipProvider>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button onClick={handleExport} disabled={!checkAccess(user?.role)}>
-                {!checkAccess(user?.role) && <Lock className="mr-2 h-4 w-4" />}
-                <Download className="mr-2 h-4 w-4" />
-                Export
-              </Button>
-            </TooltipTrigger>
-            {!checkAccess(user?.role) && (
-              <TooltipContent>Access restricted. Contact administrator.</TooltipContent>
-            )}
-          </Tooltip>
-        </TooltipProvider>
+        <Button onClick={handleExport}>
+          <Download className="mr-2 h-4 w-4" />
+          Export
+        </Button>
       </div>
 
       <Card className="card-shadow">
@@ -91,9 +58,8 @@ export default function Weighments() {
               <Input
                 placeholder="Search by ticket, vehicle, or party..."
                 value={searchTerm}
-                onChange={(e) => handleSearch(e.target.value)}
+                onChange={(e) => setSearchTerm(e.target.value)}
                 className="pl-10"
-                disabled={!checkAccess(user?.role)}
               />
             </div>
             <Button variant="outline">
