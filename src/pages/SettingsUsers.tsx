@@ -9,7 +9,6 @@ import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
-import { useAccessControl } from '@/contexts/AccessControlContext';
 import PasswordConfirmationModal from '@/components/operator/PasswordConfirmationModal';
 
 const SUPERVISOR_PASSWORD = 'supervisor';
@@ -23,15 +22,18 @@ export default function SettingsUsers() {
   const [isSaving, setIsSaving] = useState(false);
   const { toast } = useToast();
   const { user } = useAuth();
-  const { getAccessStatus, updateAccessControl } = useAccessControl();
 
   useEffect(() => {
     if (isAuthenticated) {
-      const status = getAccessStatus();
-      setIsAccessBlocked(status.isAccessBlocked);
-      setBlockedMessage(status.blockedMessage);
+      // Load from localStorage for desktop mode
+      const saved = localStorage.getItem('accessControl');
+      if (saved) {
+        const data = JSON.parse(saved);
+        setIsAccessBlocked(data.isAccessBlocked || false);
+        setBlockedMessage(data.blockedMessage || '');
+      }
     }
-  }, [isAuthenticated, getAccessStatus]);
+  }, [isAuthenticated]);
 
   const handlePasswordConfirm = () => {
     setIsAuthenticated(true);
@@ -55,7 +57,14 @@ export default function SettingsUsers() {
     setIsSaving(true);
     
     setTimeout(() => {
-      updateAccessControl(isAccessBlocked, blockedMessage, user?.username || 'admin');
+      // Save to localStorage for desktop mode
+      const accessControl = {
+        isAccessBlocked,
+        blockedMessage,
+        updatedBy: user?.username || 'admin',
+        updatedAt: new Date().toISOString()
+      };
+      localStorage.setItem('accessControl', JSON.stringify(accessControl));
       
       toast({
         title: "Settings Saved",

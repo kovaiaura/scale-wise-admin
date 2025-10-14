@@ -1,21 +1,18 @@
-import { useState, useEffect } from 'react';
-import { Save, Wifi, WifiOff, TestTube2, Scale } from 'lucide-react';
+import { useState } from 'react';
+import { Save, Scale } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useToast } from '@/hooks/use-toast';
-import { getApiBaseUrl, setApiBaseUrl } from '@/config/api';
-import { testApiConnection } from '@/services/apiClient';
 import { saveCameraConfig } from '@/services/cameraService';
+import DesktopDataManager from '@/components/settings/DesktopDataManager';
+import ModeIndicator from '@/components/settings/ModeIndicator';
 
 export default function SettingsWeighbridge() {
   const { toast } = useToast();
-  const [apiBaseUrl, setApiBaseUrlState] = useState(getApiBaseUrl());
-  const [apiStatus, setApiStatus] = useState<'online' | 'offline'>('offline');
   
   // Camera configuration
   const [frontCameraIp, setFrontCameraIp] = useState('');
@@ -28,12 +25,6 @@ export default function SettingsWeighbridge() {
   const [cameraEnabledByDefault, setCameraEnabledByDefault] = useState(() => {
     const saved = localStorage.getItem('cameraEnabledByDefault');
     return saved !== null ? JSON.parse(saved) : true;
-  });
-
-  // Development Mode State
-  const [developmentMode, setDevelopmentMode] = useState(() => {
-    const saved = localStorage.getItem('developmentMode');
-    return saved !== null ? JSON.parse(saved) : false;
   });
 
   // Weighbridge Indicator Configuration
@@ -74,24 +65,6 @@ export default function SettingsWeighbridge() {
     localStorage.getItem('weighbridgeStabilityThreshold') || '5'
   );
 
-  useEffect(() => {
-    handleTestApi();
-  }, []);
-
-  const handleTestApi = async () => {
-    const isConnected = await testApiConnection();
-    setApiStatus(isConnected ? 'online' : 'offline');
-  };
-
-  const handleSaveApiUrl = () => {
-    setApiBaseUrl(apiBaseUrl);
-    toast({
-      title: "API URL Saved",
-      description: "Spring Boot backend URL updated",
-    });
-    handleTestApi();
-  };
-
   const handleSaveCameraConfig = async () => {
     const result = await saveCameraConfig({
       frontIp: frontCameraIp,
@@ -120,18 +93,6 @@ export default function SettingsWeighbridge() {
     }
   };
 
-  const handleToggleDevelopmentMode = (enabled: boolean) => {
-    setDevelopmentMode(enabled);
-    localStorage.setItem('developmentMode', JSON.stringify(enabled));
-    
-    toast({
-      title: enabled ? "Development Mode Enabled" : "Development Mode Disabled",
-      description: enabled 
-        ? "Using localStorage for data storage. No backend required." 
-        : "Using Spring Boot API. Backend connection required.",
-    });
-  };
-
   const handleSaveWeighbridgeConfig = () => {
     localStorage.setItem('weighbridgeConnectionType', connectionType);
     localStorage.setItem('weighbridgeSerialPort', serialPort);
@@ -157,91 +118,16 @@ export default function SettingsWeighbridge() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold">Weighbridge Setup</h1>
-        <p className="text-muted-foreground">Configure backend API and camera connections</p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-3xl font-bold">Weighbridge Setup</h1>
+          <p className="text-muted-foreground">Configure weighbridge hardware and local storage</p>
+        </div>
+        <ModeIndicator />
       </div>
 
-      {/* Development Mode Toggle */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Development Mode</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="flex items-center justify-between">
-            <div className="space-y-1">
-              <Label>Enable Development Mode</Label>
-              <p className="text-sm text-muted-foreground">
-                Test frontend UI without backend connection. Uses localStorage for data storage.
-              </p>
-            </div>
-            <Switch
-              checked={developmentMode}
-              onCheckedChange={handleToggleDevelopmentMode}
-            />
-          </div>
-          
-          {developmentMode && (
-            <Alert>
-              <AlertDescription>
-                Development mode is active. All data is stored locally in your browser. 
-                Backend API calls are bypassed.
-              </AlertDescription>
-            </Alert>
-          )}
-
-          {!developmentMode && (
-            <Alert variant="destructive">
-              <AlertDescription>
-                Production mode requires Spring Boot backend running on the configured API URL below.
-              </AlertDescription>
-            </Alert>
-          )}
-        </CardContent>
-      </Card>
-
-      {/* API Configuration */}
-      <Card>
-        <CardHeader>
-          <div className="flex items-center justify-between">
-            <CardTitle>Spring Boot Backend API</CardTitle>
-            <div className="flex items-center gap-2">
-              {apiStatus === 'online' ? (
-                <div className="flex items-center gap-2 text-green-500">
-                  <Wifi className="h-4 w-4" />
-                  <span className="text-sm font-medium">Connected</span>
-                </div>
-              ) : (
-                <div className="flex items-center gap-2 text-destructive">
-                  <WifiOff className="h-4 w-4" />
-                  <span className="text-sm font-medium">Disconnected</span>
-                </div>
-              )}
-            </div>
-          </div>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="api-url">API Base URL</Label>
-            <Input
-              id="api-url"
-              value={apiBaseUrl}
-              onChange={(e) => setApiBaseUrlState(e.target.value)}
-              placeholder="http://localhost:8080"
-            />
-          </div>
-          <div className="flex gap-2">
-            <Button onClick={handleTestApi} variant="outline" className="flex-1">
-              <TestTube2 className="mr-2 h-4 w-4" />
-              Test Connection
-            </Button>
-            <Button onClick={handleSaveApiUrl} className="flex-1">
-              <Save className="mr-2 h-4 w-4" />
-              Save
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
+      {/* Desktop Data Manager */}
+      <DesktopDataManager />
 
       {/* Weighbridge Indicator Configuration */}
       <Card>

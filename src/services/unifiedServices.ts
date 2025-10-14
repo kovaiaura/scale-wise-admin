@@ -15,9 +15,17 @@ import * as apiOpenTicketService from './api/openTicketService';
 import * as apiStoredTareService from './api/storedTareService';
 
 /**
- * Check if development mode is enabled
+ * Check if offline mode is enabled (Desktop mode or localStorage fallback)
  */
-const isDevelopmentMode = (): boolean => {
+const isOfflineMode = (): boolean => {
+  // Check build mode first (highest priority)
+  if (import.meta.env.VITE_APP_MODE === 'desktop') {
+    return true;
+  }
+  if (import.meta.env.VITE_APP_MODE === 'online') {
+    return false;
+  }
+  // Fallback to localStorage for development testing
   const saved = localStorage.getItem('developmentMode');
   return saved ? JSON.parse(saved) : false;
 };
@@ -25,14 +33,14 @@ const isDevelopmentMode = (): boolean => {
 // ==================== BILL SERVICES ====================
 
 export const getBills = async (): Promise<Bill[]> => {
-  if (isDevelopmentMode()) {
+  if (isOfflineMode()) {
     return Promise.resolve(localBillService.getBills());
   }
   return apiBillService.getBills();
 };
 
 export const saveBill = async (bill: Bill): Promise<{ success: boolean; error: string | null }> => {
-  if (isDevelopmentMode()) {
+  if (isOfflineMode()) {
     localBillService.saveBill(bill);
     return Promise.resolve({ success: true, error: null });
   }
@@ -40,42 +48,42 @@ export const saveBill = async (bill: Bill): Promise<{ success: boolean; error: s
 };
 
 export const updateBillStatus = async (billId: string, status: BillStatus): Promise<Bill | null> => {
-  if (isDevelopmentMode()) {
+  if (isOfflineMode()) {
     return Promise.resolve(localBillService.updateBillStatus(billId, status));
   }
   return apiBillService.updateBillStatus(billId, status);
 };
 
 export const getBillById = async (billId: string): Promise<Bill | null> => {
-  if (isDevelopmentMode()) {
+  if (isOfflineMode()) {
     return Promise.resolve(localBillService.getBillById(billId));
   }
   return apiBillService.getBillById(billId);
 };
 
 export const getOpenBills = async (): Promise<Bill[]> => {
-  if (isDevelopmentMode()) {
+  if (isOfflineMode()) {
     return Promise.resolve(localBillService.getOpenBills());
   }
   return apiBillService.getOpenBills();
 };
 
 export const getClosedBills = async (): Promise<Bill[]> => {
-  if (isDevelopmentMode()) {
+  if (isOfflineMode()) {
     return Promise.resolve(localBillService.getClosedBills());
   }
   return apiBillService.getClosedBills();
 };
 
 export const searchBills = async (query: string): Promise<Bill[]> => {
-  if (isDevelopmentMode()) {
+  if (isOfflineMode()) {
     return Promise.resolve(localBillService.searchBills(query));
   }
   return apiBillService.searchBills(query);
 };
 
 export const filterBillsByDateRange = async (startDate: string, endDate: string): Promise<Bill[]> => {
-  if (isDevelopmentMode()) {
+  if (isOfflineMode()) {
     return Promise.resolve(localBillService.filterBillsByDateRange(startDate, endDate));
   }
   return apiBillService.filterBillsByDateRange(startDate, endDate);
@@ -84,14 +92,14 @@ export const filterBillsByDateRange = async (startDate: string, endDate: string)
 // ==================== OPEN TICKET SERVICES ====================
 
 export const getOpenTickets = async (): Promise<OpenTicket[]> => {
-  if (isDevelopmentMode()) {
+  if (isOfflineMode()) {
     return Promise.resolve(localBillService.getOpenTickets());
   }
   return apiOpenTicketService.getOpenTickets();
 };
 
 export const saveOpenTicket = async (ticket: OpenTicket): Promise<{ success: boolean; error: string | null }> => {
-  if (isDevelopmentMode()) {
+  if (isOfflineMode()) {
     localBillService.saveOpenTicket(ticket);
     return Promise.resolve({ success: true, error: null });
   }
@@ -99,7 +107,7 @@ export const saveOpenTicket = async (ticket: OpenTicket): Promise<{ success: boo
 };
 
 export const removeOpenTicket = async (ticketId: string): Promise<{ success: boolean; error: string | null }> => {
-  if (isDevelopmentMode()) {
+  if (isOfflineMode()) {
     localBillService.removeOpenTicket(ticketId);
     return Promise.resolve({ success: true, error: null });
   }
@@ -107,7 +115,7 @@ export const removeOpenTicket = async (ticketId: string): Promise<{ success: boo
 };
 
 export const getOpenTicketById = async (ticketId: string): Promise<OpenTicket | null> => {
-  if (isDevelopmentMode()) {
+  if (isOfflineMode()) {
     return Promise.resolve(localBillService.getOpenTicketById(ticketId));
   }
   return apiOpenTicketService.getOpenTicketById(ticketId);
@@ -116,21 +124,21 @@ export const getOpenTicketById = async (ticketId: string): Promise<OpenTicket | 
 // ==================== STORED TARE SERVICES ====================
 
 export const getStoredTares = async (): Promise<StoredTare[]> => {
-  if (isDevelopmentMode()) {
+  if (isOfflineMode()) {
     return Promise.resolve(localBillService.getStoredTares());
   }
   return apiStoredTareService.getStoredTares();
 };
 
 export const getStoredTareByVehicle = async (vehicleNo: string): Promise<StoredTare | null> => {
-  if (isDevelopmentMode()) {
+  if (isOfflineMode()) {
     return Promise.resolve(localBillService.getStoredTareByVehicle(vehicleNo));
   }
   return apiStoredTareService.getStoredTareByVehicle(vehicleNo);
 };
 
 export const saveStoredTare = async (tare: StoredTare): Promise<{ success: boolean; error: string | null }> => {
-  if (isDevelopmentMode()) {
+  if (isOfflineMode()) {
     localBillService.saveStoredTare(tare);
     return Promise.resolve({ success: true, error: null });
   }
@@ -138,14 +146,14 @@ export const saveStoredTare = async (tare: StoredTare): Promise<{ success: boole
 };
 
 export const isTareExpired = (tare: StoredTare): boolean => {
-  if (isDevelopmentMode()) {
+  if (isOfflineMode()) {
     return localBillService.isTareExpired(tare);
   }
   return apiStoredTareService.isTareExpired(tare);
 };
 
 export const getValidStoredTare = async (vehicleNo: string): Promise<StoredTare | null> => {
-  if (isDevelopmentMode()) {
+  if (isOfflineMode()) {
     return Promise.resolve(localBillService.getValidStoredTare(vehicleNo));
   }
   return apiStoredTareService.getValidStoredTare(vehicleNo);
@@ -159,7 +167,7 @@ export const getTareExpiryInfo = async (
   expiryDate: string;
   hoursRemaining: number;
 } | null> => {
-  if (isDevelopmentMode()) {
+  if (isOfflineMode()) {
     const tare = localBillService.getStoredTareByVehicle(vehicleNo);
     if (!tare) return null;
     return Promise.resolve(localBillService.getTareExpiryInfo(tare));
@@ -170,49 +178,49 @@ export const getTareExpiryInfo = async (
 // ==================== MASTER DATA SERVICES ====================
 
 export const getVehicles = async (): Promise<Vehicle[]> => {
-  if (isDevelopmentMode()) {
+  if (isOfflineMode()) {
     return Promise.resolve(localMasterService.getVehicles());
   }
   return apiMasterService.getVehicles();
 };
 
 export const getParties = async (): Promise<Party[]> => {
-  if (isDevelopmentMode()) {
+  if (isOfflineMode()) {
     return Promise.resolve(localMasterService.getParties());
   }
   return apiMasterService.getParties();
 };
 
 export const getProducts = async (): Promise<Product[]> => {
-  if (isDevelopmentMode()) {
+  if (isOfflineMode()) {
     return Promise.resolve(localMasterService.getProducts());
   }
   return apiMasterService.getProducts();
 };
 
 export const getVehicleByNumber = async (vehicleNo: string): Promise<Vehicle | undefined> => {
-  if (isDevelopmentMode()) {
+  if (isOfflineMode()) {
     return Promise.resolve(localMasterService.getVehicleByNumber(vehicleNo));
   }
   return apiMasterService.getVehicleByNumber(vehicleNo);
 };
 
 export const getPartyByName = async (partyName: string): Promise<Party | undefined> => {
-  if (isDevelopmentMode()) {
+  if (isOfflineMode()) {
     return Promise.resolve(localMasterService.getPartyByName(partyName));
   }
   return apiMasterService.getPartyByName(partyName);
 };
 
 export const getProductByName = async (productName: string): Promise<Product | undefined> => {
-  if (isDevelopmentMode()) {
+  if (isOfflineMode()) {
     return Promise.resolve(localMasterService.getProductByName(productName));
   }
   return apiMasterService.getProductByName(productName);
 };
 
 export const getNextSerialNo = async (): Promise<string> => {
-  if (isDevelopmentMode()) {
+  if (isOfflineMode()) {
     return Promise.resolve(localBillService.getNextSerialNo());
   }
   return apiMasterService.getNextSerialNo();
@@ -225,8 +233,8 @@ export const captureBothCameras = async (): Promise<{
   rearImage: string | null;
   error: string | null;
 }> => {
-  if (isDevelopmentMode()) {
-    // In development mode, return placeholder images
+  if (isOfflineMode()) {
+    // In offline mode, return placeholder images
     return Promise.resolve({
       frontImage: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==',
       rearImage: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==',

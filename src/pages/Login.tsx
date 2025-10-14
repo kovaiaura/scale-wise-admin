@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Navigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Weight, Lock, User, Building2 } from 'lucide-react';
+import { Weight, Lock, User } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useNotification } from '@/contexts/NotificationContext';
 import { Button } from '@/components/ui/button';
@@ -9,9 +9,9 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
+import { Badge } from '@/components/ui/badge';
 
 export default function Login() {
-  const [tenantId, setTenantId] = useState('');
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [rememberMe, setRememberMe] = useState(false);
@@ -27,14 +27,14 @@ export default function Login() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!tenantId || !username || !password) {
+    if (!username || !password) {
       error('Please fill in all fields');
       return;
     }
 
     setLoading(true);
     try {
-      await login(tenantId, username, password);
+      await login('desktop', username, password);
       success('Login successful!');
     } catch (err) {
       error('Invalid credentials. Please try again.');
@@ -57,27 +57,15 @@ export default function Login() {
               <Weight className="h-8 w-8 text-primary-foreground" />
             </div>
             <div>
-              <CardTitle className="text-2xl">WeighBridge Pro</CardTitle>
+              <div className="flex items-center justify-center gap-2 mb-2">
+                <CardTitle className="text-2xl">WeighBridge Pro</CardTitle>
+                <Badge variant="secondary">Desktop</Badge>
+              </div>
               <CardDescription>Sign in to your weighbridge management system</CardDescription>
             </div>
           </CardHeader>
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="tenant">Tenant ID</Label>
-                <div className="relative">
-                  <Building2 className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                  <Input
-                    id="tenant"
-                    placeholder="Enter tenant ID"
-                    value={tenantId}
-                    onChange={(e) => setTenantId(e.target.value)}
-                    className="pl-10"
-                    disabled={loading}
-                  />
-                </div>
-              </div>
-
               <div className="space-y-2">
                 <Label htmlFor="username">Username</Label>
                 <div className="relative">
@@ -125,12 +113,9 @@ export default function Login() {
               </Button>
 
               <div className="text-center text-sm text-muted-foreground space-y-1">
-                <p>Demo credentials:</p>
+                <p>Demo credentials - Password: <span className="font-semibold">password</span></p>
                 <p className="font-mono text-xs">
-                  Tenant: <span className="font-semibold">demo</span> | Pass: <span className="font-semibold">password</span>
-                </p>
-                <p className="font-mono text-xs">
-                  Users: <span className="font-semibold">superadmin</span> (Super Admin) | <span className="font-semibold">admin</span> (Admin) | <span className="font-semibold">operator</span> (Operator)
+                  <span className="font-semibold">admin</span> (Admin) | <span className="font-semibold">operator</span> (Operator)
                 </p>
               </div>
             </form>

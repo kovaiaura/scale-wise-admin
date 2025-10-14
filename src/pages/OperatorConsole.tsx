@@ -1,6 +1,6 @@
+import { useState, useEffect } from 'react';
 import { useWeighbridge } from '@/hooks/useWeighbridge';
 import { useAuth } from '@/contexts/AuthContext';
-import { useAccessControl } from '@/contexts/AccessControlContext';
 import { Badge } from '@/components/ui/badge';
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
 import { Wifi, WifiOff, Loader2, Lock } from 'lucide-react';
@@ -9,7 +9,16 @@ import UnifiedWeighmentForm from '@/components/operator/UnifiedWeighmentForm';
 export default function OperatorConsole() {
   const { liveWeight, isStable, connectionStatus, isConnecting } = useWeighbridge();
   const { user } = useAuth();
-  const { checkAccess, isAccessBlocked } = useAccessControl();
+  const [isAccessBlocked, setIsAccessBlocked] = useState(false);
+
+  useEffect(() => {
+    // Check localStorage for access control in desktop mode
+    const saved = localStorage.getItem('accessControl');
+    if (saved) {
+      const data = JSON.parse(saved);
+      setIsAccessBlocked(data.isAccessBlocked || false);
+    }
+  }, []);
 
   return (
     <div className="space-y-6">
