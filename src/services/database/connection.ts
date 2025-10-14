@@ -1,6 +1,13 @@
 // Database Connection Service for Truckore Pro
 // Handles SQLite connection via Tauri backend (or localStorage fallback in browser)
 
+import {
+  localStorageExecuteQuery,
+  localStorageExecuteNonQuery,
+  localStorageInitDatabase,
+  isDevelopmentMode
+} from './localStorageAdapter';
+
 // Check if running in Tauri environment
 const isTauri = typeof window !== 'undefined' && '__TAURI__' in window;
 
@@ -9,8 +16,8 @@ async function invoke<T = any>(cmd: string, args?: any): Promise<T> {
   if (isTauri) {
     return (window as any).__TAURI__.invoke(cmd, args);
   }
-  console.warn(`Tauri not available. Mock invoke called: ${cmd}`, args);
-  throw new Error('Tauri environment not available. Build as desktop app to use SQLite.');
+  // In browser mode, we'll use localStorage adapter instead of throwing
+  throw new Error('Tauri not available - should use localStorage adapter');
 }
 
 /**
@@ -18,9 +25,15 @@ async function invoke<T = any>(cmd: string, args?: any): Promise<T> {
  * Creates the database file and tables if they don't exist
  */
 export async function initDatabase(): Promise<void> {
+  if (isDevelopmentMode()) {
+    localStorageInitDatabase();
+    console.log('✅ Database initialized (Development Mode - localStorage)');
+    return;
+  }
+
   try {
     await invoke('init_database');
-    console.log('Database initialized successfully');
+    console.log('✅ Database initialized (Desktop Mode - SQLite)');
   } catch (error) {
     console.error('Failed to initialize database:', error);
     throw new Error('Database initialization failed');
@@ -37,6 +50,10 @@ export async function executeQuery<T = any>(
   query: string,
   params: any[] = []
 ): Promise<T[]> {
+  if (isDevelopmentMode()) {
+    return localStorageExecuteQuery<T>(query, params);
+  }
+
   try {
     const result = await invoke('execute_query', { query, params });
     return result as T[];
@@ -55,6 +72,10 @@ export async function executeNonQuery(
   query: string,
   params: any[] = []
 ): Promise<void> {
+  if (isDevelopmentMode()) {
+    return localStorageExecuteNonQuery(query, params);
+  }
+
   try {
     await invoke('execute_non_query', { query, params });
   } catch (error) {

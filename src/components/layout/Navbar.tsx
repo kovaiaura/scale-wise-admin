@@ -11,6 +11,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Badge } from '@/components/ui/badge';
 import { SidebarTrigger } from '@/components/ui/sidebar';
+import ModeIndicator from '@/components/settings/ModeIndicator';
 
 export const Navbar = () => {
   const { user, logout } = useAuth();
@@ -19,9 +20,12 @@ export const Navbar = () => {
     <header className="h-16 border-b bg-card flex items-center justify-between px-6 sticky top-0 z-10">
       <div className="flex items-center gap-4">
         <SidebarTrigger />
-        <div>
-          <h2 className="text-sm font-medium">Truckore Pro</h2>
-          <p className="text-xs text-muted-foreground">Weighbridge Management System</p>
+        <div className="flex items-center gap-3">
+          <div>
+            <h2 className="text-sm font-medium">Truckore Pro</h2>
+            <p className="text-xs text-muted-foreground">Weighbridge Management System</p>
+          </div>
+          <ModeIndicator />
         </div>
       </div>
 
