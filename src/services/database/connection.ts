@@ -8,13 +8,22 @@ import {
   isDevelopmentMode
 } from './localStorageAdapter';
 
-// Check if running in Tauri environment
-const isTauri = typeof window !== 'undefined' && '__TAURI__' in window;
+// Check if running in Tauri environment (dynamic check)
+function isTauriAvailable(): boolean {
+  return typeof window !== 'undefined' && 
+         '__TAURI__' in window && 
+         window.__TAURI__ !== undefined;
+}
 
 // Type-safe invoke wrapper
 async function invoke<T = any>(cmd: string, args?: any): Promise<T> {
-  if (isTauri) {
-    return (window as any).__TAURI__.invoke(cmd, args);
+  if (isTauriAvailable()) {
+    try {
+      return await (window as any).__TAURI__.invoke(cmd, args);
+    } catch (error) {
+      console.error('Tauri invoke error:', error);
+      throw error;
+    }
   }
   // In browser mode, we'll use localStorage adapter instead of throwing
   throw new Error('Tauri not available - should use localStorage adapter');
@@ -25,7 +34,8 @@ async function invoke<T = any>(cmd: string, args?: any): Promise<T> {
  * Creates the database file and tables if they don't exist
  */
 export async function initDatabase(): Promise<void> {
-  if (isDevelopmentMode()) {
+  // Always check if in development mode first
+  if (isDevelopmentMode() || !isTauriAvailable()) {
     await localStorageInitDatabase();
     console.log('✅ Database initialized (Development Mode - localStorage)');
     return;
@@ -36,7 +46,9 @@ export async function initDatabase(): Promise<void> {
     console.log('✅ Database initialized (Desktop Mode - SQLite)');
   } catch (error) {
     console.error('Failed to initialize database:', error);
-    throw new Error('Database initialization failed');
+    // Fallback to localStorage if Tauri fails
+    console.warn('Falling back to localStorage mode');
+    await localStorageInitDatabase();
   }
 }
 
@@ -50,7 +62,7 @@ export async function executeQuery<T = any>(
   query: string,
   params: any[] = []
 ): Promise<T[]> {
-  if (isDevelopmentMode()) {
+  if (isDevelopmentMode() || !isTauriAvailable()) {
     return localStorageExecuteQuery<T>(query, params);
   }
 
@@ -58,8 +70,8 @@ export async function executeQuery<T = any>(
     const result = await invoke('execute_query', { query, params });
     return result as T[];
   } catch (error) {
-    console.error('Query execution failed:', error);
-    throw error;
+    console.error('Query execution failed, falling back to localStorage:', error);
+    return localStorageExecuteQuery<T>(query, params);
   }
 }
 
@@ -72,15 +84,15 @@ export async function executeNonQuery(
   query: string,
   params: any[] = []
 ): Promise<void> {
-  if (isDevelopmentMode()) {
+  if (isDevelopmentMode() || !isTauriAvailable()) {
     return localStorageExecuteNonQuery(query, params);
   }
 
   try {
     await invoke('execute_non_query', { query, params });
   } catch (error) {
-    console.error('Non-query execution failed:', error);
-    throw error;
+    console.error('Non-query execution failed, falling back to localStorage:', error);
+    return localStorageExecuteNonQuery(query, params);
   }
 }
 
