@@ -1,7 +1,17 @@
 // Database Connection Service for Truckore Pro
-// Handles SQLite connection via Tauri backend
+// Handles SQLite connection via Tauri backend (or localStorage fallback in browser)
 
-import { invoke } from '@tauri-apps/api/tauri';
+// Check if running in Tauri environment
+const isTauri = typeof window !== 'undefined' && '__TAURI__' in window;
+
+// Type-safe invoke wrapper
+async function invoke<T = any>(cmd: string, args?: any): Promise<T> {
+  if (isTauri) {
+    return (window as any).__TAURI__.invoke(cmd, args);
+  }
+  console.warn(`Tauri not available. Mock invoke called: ${cmd}`, args);
+  throw new Error('Tauri environment not available. Build as desktop app to use SQLite.');
+}
 
 /**
  * Initialize the database
@@ -28,8 +38,8 @@ export async function executeQuery<T = any>(
   params: any[] = []
 ): Promise<T[]> {
   try {
-    const result = await invoke<T[]>('execute_query', { query, params });
-    return result;
+    const result = await invoke('execute_query', { query, params });
+    return result as T[];
   } catch (error) {
     console.error('Query execution failed:', error);
     throw error;
