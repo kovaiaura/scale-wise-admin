@@ -7,27 +7,27 @@ interface StorageTable {
   [key: string]: any[];
 }
 
-// Initialize mock database structure
+// Initialize mock database structure with force re-initialization for superadmin
 async function initStorage() {
   const bcrypt = await import('bcryptjs');
   const passwordHash = await bcrypt.hash('Passwordkore123@', 12);
   
+  const defaultSuperAdmin = {
+    id: 'dev-super-admin',
+    username: 'superadmin',
+    email: null,
+    password_hash: passwordHash,
+    role: 'super_admin',
+    is_active: 1,
+    failed_login_attempts: 0,
+    locked_until: null,
+    last_login_at: null,
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString()
+  };
+  
   const tables = {
-    users: [
-      {
-        id: 'dev-super-admin',
-        username: 'superadmin',
-        email: null,
-        password_hash: passwordHash,
-        role: 'super_admin',
-        is_active: 1,
-        failed_login_attempts: 0,
-        locked_until: null,
-        last_login_at: null,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString()
-      }
-    ],
+    users: [defaultSuperAdmin],
     security_logs: [],
     app_config: [
       { key: 'setup_completed', value: 'true', updated_at: new Date().toISOString() }
@@ -39,12 +39,48 @@ async function initStorage() {
     open_tickets: [],
   };
 
+  // Initialize tables if they don't exist
   Object.keys(tables).forEach(tableName => {
     const key = `${STORAGE_PREFIX}${tableName}`;
     if (!localStorage.getItem(key)) {
       localStorage.setItem(key, JSON.stringify(tables[tableName]));
     }
   });
+
+  // Force re-initialize superadmin user to ensure it's always active and has correct credentials
+  const usersKey = `${STORAGE_PREFIX}users`;
+  const existingUsers = JSON.parse(localStorage.getItem(usersKey) || '[]');
+  const superAdminIndex = existingUsers.findIndex((u: any) => u.username === 'superadmin');
+  
+  if (superAdminIndex >= 0) {
+    // Update existing superadmin to ensure it's active with correct password
+    existingUsers[superAdminIndex] = {
+      ...existingUsers[superAdminIndex],
+      password_hash: passwordHash,
+      is_active: 1,
+      failed_login_attempts: 0,
+      locked_until: null,
+      updated_at: new Date().toISOString()
+    };
+  } else {
+    // Add superadmin if it doesn't exist
+    existingUsers.push(defaultSuperAdmin);
+  }
+  
+  localStorage.setItem(usersKey, JSON.stringify(existingUsers));
+  
+  // Ensure setup_completed is true
+  const configKey = `${STORAGE_PREFIX}app_config`;
+  const existingConfig = JSON.parse(localStorage.getItem(configKey) || '[]');
+  const setupCompletedIndex = existingConfig.findIndex((c: any) => c.key === 'setup_completed');
+  
+  if (setupCompletedIndex >= 0) {
+    existingConfig[setupCompletedIndex].value = 'true';
+  } else {
+    existingConfig.push({ key: 'setup_completed', value: 'true', updated_at: new Date().toISOString() });
+  }
+  
+  localStorage.setItem(configKey, JSON.stringify(existingConfig));
 }
 
 function getTable(tableName: string): any[] {
