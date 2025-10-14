@@ -120,6 +120,22 @@ export async function localStorageExecuteNonQuery(
       newRow.created_at = new Date().toISOString();
     }
     
+    // Ensure users table defaults
+    if (table === 'users') {
+      if (!newRow.is_active && newRow.is_active !== 0) {
+        newRow.is_active = 1;
+      }
+      if (!newRow.failed_login_attempts) {
+        newRow.failed_login_attempts = 0;
+      }
+      if (!newRow.locked_until) {
+        newRow.locked_until = null;
+      }
+      if (!newRow.last_login_at) {
+        newRow.last_login_at = null;
+      }
+    }
+    
     data.push(newRow);
     setTable(table, data);
     return;
