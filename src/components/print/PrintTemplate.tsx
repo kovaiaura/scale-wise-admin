@@ -118,6 +118,34 @@ export const PrintTemplateComponent = forwardRef<HTMLDivElement, PrintTemplatePr
           cursor: dragging ? 'grabbing' : 'default',
         }}
       >
+        {/* Background Image Layer - Only in Edit Mode */}
+        {editMode && template.backgroundImage && (
+          <div
+            style={{
+              position: 'absolute',
+              top: 0,
+              left: 0,
+              width: '100%',
+              height: '100%',
+              opacity: (template.backgroundOpacity || 30) / 100,
+              pointerEvents: 'none',
+              zIndex: 0,
+            }}
+          >
+            <img
+              src={template.backgroundImage}
+              alt="Template Background"
+              style={{
+                width: '100%',
+                height: '100%',
+                objectFit: 'contain',
+              }}
+            />
+          </div>
+        )}
+
+        {/* Fields with z-index to be above background */}
+        <div style={{ position: 'relative', zIndex: 1 }}>
         {renderField('ticketNo', bill.ticketNo, 'Ticket No')}
         {renderField('vehicleNo', bill.vehicleNo, 'Vehicle No')}
         {renderField('customerName', bill.partyName, 'Customer')}
@@ -222,6 +250,7 @@ export const PrintTemplateComponent = forwardRef<HTMLDivElement, PrintTemplatePr
             ) : null}
           </div>
         )}
+        </div>
 
         <style>{`
           @media print {

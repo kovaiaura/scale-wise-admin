@@ -8,10 +8,11 @@ import { PrintTemplate, FieldPosition } from '@/types/printTemplate';
 import { printTemplateService } from '@/services/printTemplateService';
 import { PrintTemplateComponent } from '@/components/print/PrintTemplate';
 import { Bill } from '@/types/weighment';
-import { Save, RotateCcw, Printer, Edit3 } from 'lucide-react';
+import { Save, RotateCcw, Printer, Edit3, Upload, X } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
+import { Slider } from '@/components/ui/slider';
 
 const SAMPLE_BILL: Bill = {
   id: '1',
@@ -40,6 +41,7 @@ export default function PrintSettings() {
   const [editMode, setEditMode] = useState(false);
   const { toast } = useToast();
   const printRef = useRef<HTMLDivElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleSave = () => {
     printTemplateService.saveTemplate(template);
@@ -133,6 +135,66 @@ export default function PrintSettings() {
         y,
       },
     }));
+  };
+
+  const handleBackgroundImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (!file.type.match(/^image\/(png|jpeg|jpg)$/)) {
+      toast({
+        title: 'Invalid file type',
+        description: 'Please upload a PNG or JPG image.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const img = new Image();
+      img.onload = () => {
+        if (img.width !== 842 || img.height !== 595) {
+          toast({
+            title: 'Image size mismatch',
+            description: `Image is ${img.width}x${img.height}px. Recommended: 842x595px (A5 Landscape)`,
+          });
+        }
+
+        setTemplate((prev) => ({
+          ...prev,
+          backgroundImage: event.target?.result as string,
+        }));
+
+        toast({
+          title: 'Background uploaded',
+          description: 'Template background image has been set.',
+        });
+      };
+      img.src = event.target?.result as string;
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleOpacityChange = (value: number[]) => {
+    setTemplate((prev) => ({
+      ...prev,
+      backgroundOpacity: value[0],
+    }));
+  };
+
+  const handleRemoveBackground = () => {
+    setTemplate((prev) => ({
+      ...prev,
+      backgroundImage: undefined,
+    }));
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+    toast({
+      title: 'Background removed',
+      description: 'Template background image has been cleared.',
+    });
   };
 
   const fieldLabels: Record<keyof PrintTemplate['fields'], string> = {
@@ -236,10 +298,11 @@ export default function PrintSettings() {
           </CardHeader>
           <CardContent>
             <Tabs defaultValue="fields" className="w-full">
-              <TabsList className="grid w-full grid-cols-3">
+              <TabsList className="grid w-full grid-cols-4">
                 <TabsTrigger value="fields">Text Fields</TabsTrigger>
                 <TabsTrigger value="frontImage">Front Image</TabsTrigger>
                 <TabsTrigger value="rearImage">Rear Image</TabsTrigger>
+                <TabsTrigger value="background">Background</TabsTrigger>
               </TabsList>
 
               <TabsContent value="fields" className="space-y-4 mt-4">
@@ -380,6 +443,74 @@ export default function PrintSettings() {
                         onChange={(e) => updateRearImagePosition('height', Number(e.target.value))}
                       />
                     </div>
+                  </div>
+                </Card>
+              </TabsContent>
+
+              <TabsContent value="background" className="space-y-4 mt-4">
+                <Card className="p-4">
+                  <h3 className="font-semibold mb-3">Template Background Image</h3>
+                  <p className="text-sm text-muted-foreground mb-4">
+                    Upload a scanned image of your pre-printed bill to use as a positioning guide. 
+                    Recommended size: 842x595px (A5 Landscape)
+                  </p>
+
+                  <div className="space-y-4">
+                    <div>
+                      <input
+                        ref={fileInputRef}
+                        type="file"
+                        accept="image/png,image/jpeg,image/jpg"
+                        onChange={handleBackgroundImageUpload}
+                        className="hidden"
+                        id="background-upload"
+                      />
+                      <Button
+                        onClick={() => fileInputRef.current?.click()}
+                        variant="outline"
+                        className="w-full"
+                      >
+                        <Upload className="mr-2 h-4 w-4" />
+                        {template.backgroundImage ? 'Change Background Image' : 'Upload Background Image'}
+                      </Button>
+                    </div>
+
+                    {template.backgroundImage && (
+                      <>
+                        <div className="p-3 bg-green-50 dark:bg-green-950/20 border border-green-200 dark:border-green-800 rounded-lg">
+                          <p className="text-sm text-green-800 dark:text-green-200">✓ Background image uploaded</p>
+                        </div>
+
+                        <div className="space-y-2">
+                          <div className="flex items-center justify-between">
+                            <Label>Background Opacity</Label>
+                            <span className="text-sm text-muted-foreground">
+                              {template.backgroundOpacity || 30}%
+                            </span>
+                          </div>
+                          <Slider
+                            value={[template.backgroundOpacity || 30]}
+                            onValueChange={handleOpacityChange}
+                            min={0}
+                            max={100}
+                            step={5}
+                            className="w-full"
+                          />
+                          <p className="text-xs text-muted-foreground">
+                            Adjust transparency to see fields clearly over the background
+                          </p>
+                        </div>
+
+                        <Button
+                          onClick={handleRemoveBackground}
+                          variant="destructive"
+                          className="w-full"
+                        >
+                          <X className="mr-2 h-4 w-4" />
+                          Remove Background Image
+                        </Button>
+                      </>
+                    )}
                   </div>
                 </Card>
               </TabsContent>

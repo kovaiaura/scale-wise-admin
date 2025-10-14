@@ -34,6 +34,8 @@ export interface PrintTemplate {
   };
   frontImage: ImagePosition;
   rearImage: ImagePosition;
+  backgroundImage?: string; // base64 data URL of the template image
+  backgroundOpacity?: number; // 0-100, default 30
   createdAt: string;
   updatedAt: string;
 }
@@ -67,6 +69,8 @@ export const DEFAULT_TEMPLATE: PrintTemplate = {
     width: 150,
     height: 120,
   },
+  backgroundImage: undefined,
+  backgroundOpacity: 30,
   createdAt: new Date().toISOString(),
   updatedAt: new Date().toISOString(),
 };
