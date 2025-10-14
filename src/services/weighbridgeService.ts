@@ -61,6 +61,12 @@ class WeighbridgeService {
     return new Promise((resolve) => {
       this.loadConfig();
       
+      // Check if weighbridge is enabled
+      const enabled = localStorage.getItem('weighbridgeEnabled');
+      if (enabled === 'false') {
+        console.log('🔧 Weighbridge disabled - Using test mode (00000)');
+      }
+      
       // Simulate connection delay
       setTimeout(() => {
         this.isConnected = true;
@@ -98,7 +104,14 @@ class WeighbridgeService {
 
     // Simulate weight reading every 500ms
     this.intervalId = setInterval(() => {
-      this.simulateWeightReading();
+      const enabled = localStorage.getItem('weighbridgeEnabled');
+      if (enabled === 'false') {
+        // Test mode - always return 0
+        this.currentWeight = 0;
+        this.baseWeight = 0;
+      } else {
+        this.simulateWeightReading();
+      }
       this.notifySubscribers();
     }, 500);
   }

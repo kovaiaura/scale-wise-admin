@@ -6,6 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useToast } from '@/hooks/use-toast';
 import { saveCameraConfig } from '@/services/cameraService';
 import DesktopDataManager from '@/components/settings/DesktopDataManager';
@@ -64,6 +65,10 @@ export default function SettingsWeighbridge() {
   const [stabilityThreshold, setStabilityThreshold] = useState(() => 
     localStorage.getItem('weighbridgeStabilityThreshold') || '5'
   );
+  const [weighbridgeEnabled, setWeighbridgeEnabled] = useState(() => {
+    const saved = localStorage.getItem('weighbridgeEnabled');
+    return saved !== null ? JSON.parse(saved) : true;
+  });
 
   const handleSaveCameraConfig = async () => {
     const result = await saveCameraConfig({
@@ -106,6 +111,7 @@ export default function SettingsWeighbridge() {
     localStorage.setItem('weighbridgeUnit', weightUnit);
     localStorage.setItem('weighbridgeDecimalPlaces', decimalPlaces);
     localStorage.setItem('weighbridgeStabilityThreshold', stabilityThreshold);
+    localStorage.setItem('weighbridgeEnabled', JSON.stringify(weighbridgeEnabled));
 
     toast({
       title: "Weighbridge Configuration Saved",
@@ -138,6 +144,30 @@ export default function SettingsWeighbridge() {
           </div>
         </CardHeader>
         <CardContent className="space-y-6">
+          <div className="space-y-3 p-4 bg-muted/50 rounded-lg border-2 border-primary/20">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-semibold">Enable Weighbridge Indicator</p>
+                <p className="text-xs text-muted-foreground mt-1">
+                  {weighbridgeEnabled 
+                    ? "Reading live weight from connected indicator" 
+                    : "Weight will show as 00000 (Testing Mode)"}
+                </p>
+              </div>
+              <Switch 
+                checked={weighbridgeEnabled}
+                onCheckedChange={setWeighbridgeEnabled}
+              />
+            </div>
+            {!weighbridgeEnabled && (
+              <Alert className="border-yellow-500 bg-yellow-500/10">
+                <AlertDescription className="text-xs">
+                  ⚠️ Testing Mode Active - All weights will be recorded as 00000 KG
+                </AlertDescription>
+              </Alert>
+            )}
+          </div>
+
           <div className="space-y-2">
             <Label>Connection Type</Label>
             <Select value={connectionType} onValueChange={setConnectionType}>

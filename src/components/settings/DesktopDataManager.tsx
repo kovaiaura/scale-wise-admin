@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { HardDrive, Download, Upload, Trash2, FileSpreadsheet, Database } from 'lucide-react';
+import { HardDrive, Download, Upload, Trash2, FileSpreadsheet, Database, FolderOpen } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription } from '@/components/ui/alert';
@@ -118,6 +118,19 @@ export default function DesktopDataManager() {
     }
   };
 
+  const handleShowDatabaseFolder = () => {
+    // For web/browser mode, show the localStorage info
+    toast({
+      title: "Database Location",
+      description: "Web Mode: Data stored in browser's LocalStorage. Use 'Backup Data' to save a copy.",
+    });
+    
+    // In desktop mode (Tauri), this would use platform-specific API to open folder
+    // Example for future Tauri implementation:
+    // import { invoke } from '@tauri-apps/api/tauri';
+    // invoke('open_database_folder');
+  };
+
   return (
     <Card>
       <CardHeader>
@@ -152,6 +165,11 @@ export default function DesktopDataManager() {
         </div>
 
         <div className="grid grid-cols-2 gap-3">
+          <Button onClick={handleShowDatabaseFolder} variant="outline">
+            <FolderOpen className="mr-2 h-4 w-4" />
+            Show Database Folder
+          </Button>
+
           <Button onClick={handleBackupDatabase} variant="outline">
             <Download className="mr-2 h-4 w-4" />
             Backup Data
@@ -167,7 +185,7 @@ export default function DesktopDataManager() {
             Export to Excel
           </Button>
 
-          <Button onClick={handleClearAllData} variant="destructive">
+          <Button onClick={handleClearAllData} variant="destructive" className="col-span-2">
             <Trash2 className="mr-2 h-4 w-4" />
             Clear All Data
           </Button>
