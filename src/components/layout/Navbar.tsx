@@ -20,7 +20,7 @@ export const Navbar = () => {
       <div className="flex items-center gap-4">
         <SidebarTrigger />
         <div>
-          <h2 className="text-sm font-medium">{user?.tenantName}</h2>
+          <h2 className="text-sm font-medium">Truckore Pro</h2>
           <p className="text-xs text-muted-foreground">Weighbridge Management System</p>
         </div>
       </div>

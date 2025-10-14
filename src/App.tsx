@@ -1,3 +1,4 @@
+import { useState, useEffect } from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -21,18 +22,43 @@ import SettingsProfile from "./pages/SettingsProfile";
 import SettingsUsers from "./pages/SettingsUsers";
 import PrintSettings from "./pages/PrintSettings";
 import NotFound from "./pages/NotFound";
+import FirstTimeSetup from "./pages/FirstTimeSetup";
 import AccessBlockedDialog from "./components/operator/AccessBlockedDialog";
+import { LoadingScreen } from "./components/setup/LoadingScreen";
 import { useAccessControl } from "./contexts/AccessControlContext";
+import { initDatabase, checkSetupStatus } from "./services/database/connection";
 
 const queryClient = new QueryClient();
 
 const AppContent = () => {
   const { isDialogOpen, closeDialog, blockedMessage } = useAccessControl();
+  const [setupCompleted, setSetupCompleted] = useState<boolean | null>(null);
+  const [isCheckingSetup, setIsCheckingSetup] = useState(true);
+
+  useEffect(() => {
+    const checkSetup = async () => {
+      try {
+        await initDatabase();
+        const completed = await checkSetupStatus();
+        setSetupCompleted(completed);
+      } catch (error) {
+        console.error('Setup check failed:', error);
+        setSetupCompleted(false);
+      } finally {
+        setIsCheckingSetup(false);
+      }
+    };
+    checkSetup();
+  }, []);
+
+  if (isCheckingSetup) return <LoadingScreen />;
+  if (setupCompleted === false) return <FirstTimeSetup />;
 
   return (
     <>
       <Routes>
         <Route path="/login" element={<Login />} />
+        <Route path="/setup" element={<FirstTimeSetup />} />
         <Route path="/" element={<AppLayout />}>
           <Route index element={<Navigate to="/dashboard" replace />} />
           <Route path="dashboard" element={<Dashboard />} />

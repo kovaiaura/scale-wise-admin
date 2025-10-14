@@ -44,9 +44,9 @@ async function hashPassword(password: string): Promise<string> {
 }
 
 /**
- * Verify a password against a hash
+ * Verify a password against a hash (internal helper)
  */
-async function verifyPassword(password: string, hash: string): Promise<boolean> {
+async function verifyPasswordHash(password: string, hash: string): Promise<boolean> {
   return bcrypt.compare(password, hash);
 }
 
@@ -71,43 +71,34 @@ function rowToUser(row: UserRow): User {
 /**
  * Create a new user
  */
-export async function createUser(
-  username: string,
-  password: string,
-  role: 'super_admin' | 'admin' | 'operator',
-  email?: string
-): Promise<User> {
+export async function createUser(params: {
+  username: string;
+  password: string;
+  role: 'super_admin' | 'admin' | 'operator';
+  email?: string | null;
+}): Promise<string> {
   const id = uuidv4();
-  const passwordHash = await hashPassword(password);
+  const passwordHash = await hashPassword(params.password);
   
   await executeNonQuery(
     `INSERT INTO users (id, username, email, password_hash, role, created_at, updated_at)
      VALUES (?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)`,
-    [id, username, email || null, passwordHash, role]
+    [id, params.username, params.email || null, passwordHash, params.role]
   );
 
-  const rows = await executeQuery<UserRow>(
-    'SELECT * FROM users WHERE id = ?',
-    [id]
-  );
-
-  if (rows.length === 0) {
-    throw new Error('Failed to create user');
-  }
-
-  return rowToUser(rows[0]);
+  return id;
 }
 
 /**
- * Get user by username
+ * Get user by username (returns UserRow with password_hash)
  */
-export async function getUserByUsername(username: string): Promise<User | null> {
+export async function getUserByUsername(username: string): Promise<UserRow | null> {
   const rows = await executeQuery<UserRow>(
     'SELECT * FROM users WHERE username = ?',
     [username]
   );
 
-  return rows.length > 0 ? rowToUser(rows[0]) : null;
+  return rows.length > 0 ? rows[0] : null;
 }
 
 /**
@@ -170,7 +161,7 @@ export async function verifyUserCredentials(
   }
 
   // Verify password
-  const isValid = await verifyPassword(password, userRow.password_hash);
+  const isValid = await verifyPasswordHash(password, userRow.password_hash);
 
   if (!isValid) {
     await incrementFailedAttempts(user.id);
@@ -190,7 +181,7 @@ export async function verifyUserCredentials(
 /**
  * Increment failed login attempts and lock account if needed
  */
-async function incrementFailedAttempts(userId: string): Promise<void> {
+export async function incrementFailedAttempts(userId: string): Promise<void> {
   const rows = await executeQuery<{ failed_login_attempts: number }>(
     'SELECT failed_login_attempts FROM users WHERE id = ?',
     [userId]
@@ -217,9 +208,43 @@ async function incrementFailedAttempts(userId: string): Promise<void> {
 /**
  * Reset failed login attempts
  */
-async function resetFailedAttempts(userId: string): Promise<void> {
+export async function resetFailedAttempts(userId: string): Promise<void> {
   await executeNonQuery(
     'UPDATE users SET failed_login_attempts = 0, locked_until = NULL WHERE id = ?',
+    [userId]
+  );
+}
+
+/**
+ * Verify password for a user ID
+ */
+export async function verifyPassword(userId: string, password: string): Promise<boolean> {
+  const rows = await executeQuery<UserRow>(
+    'SELECT password_hash FROM users WHERE id = ?',
+    [userId]
+  );
+
+  if (rows.length === 0) return false;
+
+  return bcrypt.compare(password, rows[0].password_hash);
+}
+
+/**
+ * Lock user account until specified time
+ */
+export async function lockUserAccount(userId: string, lockUntil: Date): Promise<void> {
+  await executeNonQuery(
+    'UPDATE users SET locked_until = ? WHERE id = ?',
+    [lockUntil.toISOString(), userId]
+  );
+}
+
+/**
+ * Update last login timestamp
+ */
+export async function updateLastLogin(userId: string): Promise<void> {
+  await executeNonQuery(
+    'UPDATE users SET last_login_at = CURRENT_TIMESTAMP WHERE id = ?',
     [userId]
   );
 }
@@ -303,7 +328,7 @@ export async function changePassword(
     return { success: false, error: 'User not found' };
   }
 
-  const isValid = await verifyPassword(oldPassword, rows[0].password_hash);
+  const isValid = await verifyPasswordHash(oldPassword, rows[0].password_hash);
 
   if (!isValid) {
     return { success: false, error: 'Current password is incorrect' };

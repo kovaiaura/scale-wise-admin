@@ -34,10 +34,10 @@ export default function Login() {
 
     setLoading(true);
     try {
-      await login('desktop', username, password);
+      await login(username, password);
       success('Login successful!');
-    } catch (err) {
-      error('Invalid credentials. Please try again.');
+    } catch (err: any) {
+      error(err.message || 'Login failed. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -58,10 +58,10 @@ export default function Login() {
             </div>
             <div>
               <div className="flex items-center justify-center gap-2 mb-2">
-                <CardTitle className="text-2xl">WeighBridge Pro</CardTitle>
+                <CardTitle className="text-2xl">Truckore Pro</CardTitle>
                 <Badge variant="secondary">Desktop</Badge>
               </div>
-              <CardDescription>Sign in to your weighbridge management system</CardDescription>
+              <CardDescription>Secure desktop weighbridge management system</CardDescription>
             </div>
           </CardHeader>
           <CardContent>
@@ -111,13 +111,6 @@ export default function Login() {
               <Button type="submit" className="w-full" disabled={loading}>
                 {loading ? 'Signing in...' : 'Sign In'}
               </Button>
-
-              <div className="text-center text-sm text-muted-foreground space-y-1">
-                <p>Demo credentials - Password: <span className="font-semibold">password</span></p>
-                <p className="font-mono text-xs">
-                  <span className="font-semibold">admin</span> (Admin) | <span className="font-semibold">operator</span> (Operator)
-                </p>
-              </div>
             </form>
           </CardContent>
         </Card>

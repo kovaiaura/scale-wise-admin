@@ -57,20 +57,11 @@ export default function SettingsProfile() {
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="tenant">Tenant</Label>
-                <div className="relative">
-                  <Building2 className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                  <Input id="tenant" defaultValue={user?.tenantName} className="pl-10" disabled />
-                </div>
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="role">Role</Label>
-                <div className="relative">
-                  <Shield className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                  <Input id="role" defaultValue={user?.role} className="pl-10" disabled />
-                </div>
+            <div className="space-y-2">
+              <Label htmlFor="role">Role</Label>
+              <div className="relative">
+                <Shield className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input id="role" defaultValue={user?.role} className="pl-10" disabled />
               </div>
             </div>
           </CardContent>
