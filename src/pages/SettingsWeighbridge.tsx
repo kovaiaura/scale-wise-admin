@@ -11,6 +11,7 @@ import { useToast } from '@/hooks/use-toast';
 import { saveCameraConfig } from '@/services/cameraService';
 import DesktopDataManager from '@/components/settings/DesktopDataManager';
 import ModeIndicator from '@/components/settings/ModeIndicator';
+import ModeToggle from '@/components/settings/ModeToggle';
 
 export default function SettingsWeighbridge() {
   const { toast } = useToast();
@@ -131,6 +132,9 @@ export default function SettingsWeighbridge() {
         </div>
         <ModeIndicator />
       </div>
+
+      {/* Mode Toggle (Web Browser Only) */}
+      <ModeToggle />
 
       {/* Desktop Data Manager */}
       <DesktopDataManager />
