@@ -8,24 +8,53 @@ import {
   isDevelopmentMode
 } from './localStorageAdapter';
 
+// Import Tauri API - this ensures proper initialization
+let tauriInvoke: ((cmd: string, args?: any) => Promise<any>) | null = null;
+
+// Dynamically import Tauri API
+async function initTauriAPI() {
+  if (tauriInvoke) return; // Already initialized
+  
+  try {
+    // @ts-ignore - Dynamic import for Tauri API (only available in desktop mode)
+    const tauriApi = await import('@tauri-apps/api/tauri');
+    tauriInvoke = tauriApi.invoke;
+    console.log('✅ Tauri API initialized successfully');
+  } catch (error) {
+    console.log('ℹ️ Tauri API not available (browser mode)');
+  }
+}
+
 // Check if running in Tauri environment (dynamic check)
 function isTauriAvailable(): boolean {
-  return typeof window !== 'undefined' && 
-         '__TAURI__' in window && 
-         window.__TAURI__ !== undefined;
+  try {
+    return typeof window !== 'undefined' && 
+           '__TAURI__' in window && 
+           window.__TAURI__ !== undefined;
+  } catch {
+    return false;
+  }
 }
 
 // Type-safe invoke wrapper
 async function invoke<T = any>(cmd: string, args?: any): Promise<T> {
-  if (isTauriAvailable()) {
+  // Initialize Tauri API if not already done
+  if (!tauriInvoke && isTauriAvailable()) {
+    await initTauriAPI();
+  }
+  
+  if (tauriInvoke) {
     try {
-      return await (window as any).__TAURI__.invoke(cmd, args);
+      console.log(`[Tauri] Invoking command: ${cmd}`);
+      const result = await tauriInvoke(cmd, args);
+      console.log(`[Tauri] Command ${cmd} succeeded`);
+      return result as T;
     } catch (error) {
-      console.error('Tauri invoke error:', error);
+      console.error(`[Tauri] Command ${cmd} failed:`, error);
       throw error;
     }
   }
-  // In browser mode, we'll use localStorage adapter instead of throwing
+  
   throw new Error('Tauri not available - should use localStorage adapter');
 }
 
@@ -34,20 +63,24 @@ async function invoke<T = any>(cmd: string, args?: any): Promise<T> {
  * Creates the database file and tables if they don't exist
  */
 export async function initDatabase(): Promise<void> {
+  const inTauriMode = isTauriAvailable();
+  console.log(`[DB Init] Tauri available: ${inTauriMode}`);
+  
   // Always check if in development mode first
-  if (isDevelopmentMode() || !isTauriAvailable()) {
+  if (isDevelopmentMode() || !inTauriMode) {
     await localStorageInitDatabase();
-    console.log('✅ Database initialized (Development Mode - localStorage)');
+    console.log('✅ Database initialized (Browser Mode - localStorage)');
     return;
   }
 
   try {
+    console.log('[DB Init] Initializing Tauri SQLite database...');
     await invoke('init_database');
     console.log('✅ Database initialized (Desktop Mode - SQLite)');
   } catch (error) {
-    console.error('Failed to initialize database:', error);
+    console.error('❌ Failed to initialize Tauri database:', error);
     // Fallback to localStorage if Tauri fails
-    console.warn('Falling back to localStorage mode');
+    console.warn('⚠️ Falling back to localStorage mode');
     await localStorageInitDatabase();
   }
 }
@@ -62,15 +95,20 @@ export async function executeQuery<T = any>(
   query: string,
   params: any[] = []
 ): Promise<T[]> {
-  if (isDevelopmentMode() || !isTauriAvailable()) {
+  const inDesktopMode = isTauriAvailable();
+  
+  if (isDevelopmentMode() || !inDesktopMode) {
+    console.log('[DB Query] Using localStorage adapter');
     return localStorageExecuteQuery<T>(query, params);
   }
 
   try {
+    console.log('[DB Query] Using Tauri SQLite backend');
     const result = await invoke('execute_query', { query, params });
     return result as T[];
   } catch (error) {
-    console.error('Query execution failed, falling back to localStorage:', error);
+    console.error('❌ [DB Query] Tauri backend failed:', error);
+    console.warn('⚠️ [DB Query] Attempting localStorage fallback...');
     return localStorageExecuteQuery<T>(query, params);
   }
 }
@@ -84,14 +122,22 @@ export async function executeNonQuery(
   query: string,
   params: any[] = []
 ): Promise<void> {
-  if (isDevelopmentMode() || !isTauriAvailable()) {
+  const inDesktopMode = isTauriAvailable();
+  
+  console.log(`[DB NonQuery] Desktop mode: ${inDesktopMode}`);
+  
+  if (isDevelopmentMode() || !inDesktopMode) {
+    console.log('[DB NonQuery] Using localStorage adapter');
     return localStorageExecuteNonQuery(query, params);
   }
 
   try {
+    console.log('[DB NonQuery] Using Tauri SQLite backend');
     await invoke('execute_non_query', { query, params });
+    console.log('[DB NonQuery] ✅ Success');
   } catch (error) {
-    console.error('Non-query execution failed, falling back to localStorage:', error);
+    console.error('❌ [DB NonQuery] Tauri backend failed:', error);
+    console.warn('⚠️ [DB NonQuery] Attempting localStorage fallback...');
     return localStorageExecuteNonQuery(query, params);
   }
 }

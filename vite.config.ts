@@ -8,6 +8,7 @@ export default defineConfig(({ mode }) => ({
   server: {
     host: "::",
     port: 8080,
+    strictPort: true,
   },
   plugins: [react(), mode === "development" && componentTagger()].filter(Boolean),
   resolve: {
@@ -15,4 +16,8 @@ export default defineConfig(({ mode }) => ({
       "@": path.resolve(__dirname, "./src"),
     },
   },
+  // Disable clearing the screen for better Tauri dev experience
+  clearScreen: false,
+  // Prevent Vite from obscuring Rust errors
+  envPrefix: ['VITE_', 'TAURI_'],
 }));
