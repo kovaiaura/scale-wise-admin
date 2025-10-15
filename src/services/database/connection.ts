@@ -11,17 +11,24 @@ import {
 // Import Tauri API - this ensures proper initialization
 let tauriInvoke: ((cmd: string, args?: any) => Promise<any>) | null = null;
 
-// Dynamically import Tauri API
+// Dynamically import Tauri API (only in desktop environment)
 async function initTauriAPI() {
   if (tauriInvoke) return; // Already initialized
   
   try {
+    // Check if Tauri is actually available before attempting import
+    if (!isTauriAvailable()) {
+      console.log('ℹ️ Tauri API not available (browser mode)');
+      return;
+    }
+    
     // @ts-ignore - Dynamic import for Tauri API (only available in desktop mode)
     const tauriApi = await import('@tauri-apps/api/tauri');
     tauriInvoke = tauriApi.invoke;
     console.log('✅ Tauri API initialized successfully');
   } catch (error) {
-    console.log('ℹ️ Tauri API not available (browser mode)');
+    // Silently fail in browser mode - this is expected
+    console.log('ℹ️ Tauri API import failed (running in browser mode)');
   }
 }
 

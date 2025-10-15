@@ -20,4 +20,10 @@ export default defineConfig(({ mode }) => ({
   clearScreen: false,
   // Prevent Vite from obscuring Rust errors
   envPrefix: ['VITE_', 'TAURI_'],
+  build: {
+    rollupOptions: {
+      // Externalize Tauri APIs for browser builds (they're only available in desktop)
+      external: mode !== 'desktop' ? ['@tauri-apps/api/tauri', '@tauri-apps/api'] : [],
+    },
+  },
 }));
