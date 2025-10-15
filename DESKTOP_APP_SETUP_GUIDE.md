@@ -260,6 +260,8 @@ The generated installer includes:
 
 ## Troubleshooting
 
+> **💡 Windows Users**: See **`WINDOWS_TROUBLESHOOTING.md`** for comprehensive Windows-specific troubleshooting covering 17+ common issues.
+
 ### Issue 1: "Non-query execution failed - this application requires Tauri desktop environment"
 
 **Cause**: The app is running in browser mode instead of Tauri desktop mode.
@@ -286,24 +288,48 @@ The generated installer includes:
    - Check that `window.__TAURI__` exists in the browser console
    - Restart the dev server
 
+4. **Windows-specific fixes**:
+   ```powershell
+   # Kill all processes
+   taskkill /IM node.exe /F
+   taskkill /IM truckore-pro.exe /F
+   
+   # Clean install
+   npm install
+   
+   # Restart
+   npm run tauri:dev
+   ```
+
 ---
 
 ### Issue 2: Rust Compilation Errors
 
 **Common Errors**:
 
+#### Error: `linking with link.exe failed`
 ```
 error: linking with `link.exe` failed
+error: could not compile `windows-sys`
 ```
 
 **Solution**: Install Visual Studio Build Tools (Windows) - see [Prerequisites](#prerequisites)
 
+**Windows detailed steps:**
+1. Download "Build Tools for Visual Studio 2022"
+2. Install "Desktop development with C++"
+3. Ensure MSVC v143 and Windows 10/11 SDK are selected
+4. Restart computer
+5. Verify: `cl.exe` should work in PowerShell
+
+#### Error: `could not find Cargo.toml`
 ```
 error: could not find `Cargo.toml`
 ```
 
 **Solution**: You're in the wrong directory. Navigate to the project root where `src-tauri/` exists.
 
+#### Error: Undeclared crate
 ```
 error[E0433]: failed to resolve: use of undeclared crate
 ```
@@ -312,7 +338,20 @@ error[E0433]: failed to resolve: use of undeclared crate
 ```bash
 cd src-tauri
 cargo build
+cd ..
 ```
+
+#### Windows: Slow compilation or random failures
+
+**Cause**: Windows Defender scanning each compiled file.
+
+**Solution**:
+1. Open Windows Security
+2. Add exclusions for:
+   - Project folder
+   - `C:\Users\<YourName>\.cargo`
+   - `C:\Users\<YourName>\.rustup`
+3. Rebuild - should be 3-5x faster!
 
 ---
 
@@ -339,17 +378,29 @@ Failed to initialize database: schema file not found
 **Error**:
 ```
 Port 8080 is already in use
+EADDRINUSE: address already in use
 ```
 
 **Solution**:
 
 **Option A**: Kill the process using port 8080
-```bash
-# Windows
-netstat -ano | findstr :8080
-taskkill /PID <PID> /F
 
-# Mac/Linux
+Windows:
+```powershell
+# Find process using port 8080
+netstat -ano | findstr :8080
+# Note the PID (last column, e.g., 12345)
+
+# Kill the process (replace 12345 with actual PID)
+taskkill /PID 12345 /F
+
+# Or kill all Node.js processes
+taskkill /IM node.exe /F
+```
+
+Mac/Linux:
+```bash
+# Find and kill process using port 8080
 lsof -ti:8080 | xargs kill -9
 ```
 
@@ -382,10 +433,23 @@ And update `src-tauri/tauri.conf.json`:
 1. **Database not initialized**
    - Check console logs for database errors
    - Verify SQLite is working: `sqlite3 --version`
+   - Windows: Check database folder exists at `%APPDATA%\truckore-pro\data`
 
 2. **Permission issues**
-   - On Windows: Run as Administrator (if needed)
-   - On Mac/Linux: Check file permissions on the app data directory
+   
+   Windows:
+   ```powershell
+   # Run as Administrator (one time)
+   # Right-click PowerShell → Run as Administrator
+   npm run tauri:dev
+   ```
+   
+   Mac/Linux:
+   ```bash
+   # Check permissions
+   ls -la ~/Library/Application\ Support/com.truckore.pro/  # macOS
+   ls -la ~/.local/share/truckore-pro/                      # Linux
+   ```
 
 3. **Password validation failed**
    - Password must meet requirements:
@@ -394,6 +458,16 @@ And update `src-tauri/tauri.conf.json`:
      - Contains lowercase letter
      - Contains number
      - Contains special character
+
+4. **Database lock error (Windows)**
+   ```powershell
+   # Close all instances
+   taskkill /IM truckore-pro.exe /F
+   taskkill /IM node.exe /F
+   
+   # Restart
+   npm run tauri:dev
+   ```
 
 ---
 
@@ -418,6 +492,31 @@ And update `src-tauri/tauri.conf.json`:
    ```
 
 4. **Clear cache and rebuild**:
+   
+   Windows:
+   ```powershell
+   # Stop all processes
+   taskkill /IM node.exe /F
+   taskkill /IM truckore-pro.exe /F
+   
+   # Clear Rust build cache
+   cd src-tauri
+   cargo clean
+   cd ..
+   
+   # Clear Node modules
+   Remove-Item -Recurse -Force node_modules
+   Remove-Item -Force package-lock.json
+   
+   # Clear Vite cache
+   Remove-Item -Recurse -Force .vite
+   
+   # Reinstall and rebuild
+   npm install
+   npm run tauri:dev
+   ```
+   
+   Mac/Linux:
    ```bash
    # Clear Rust build cache
    cd src-tauri
@@ -425,12 +524,19 @@ And update `src-tauri/tauri.conf.json`:
    
    # Clear Node modules
    cd ..
-   rm -rf node_modules
+   rm -rf node_modules package-lock.json
+   
+   # Reinstall
    npm install
    
    # Rebuild
    npm run tauri:dev
    ```
+
+5. **Windows: Check for blocking issues**:
+   - Windows Defender slowing compilation → Add exclusions
+   - Antivirus quarantining `.exe` → Check quarantine, add exclusions
+   - Long path names (260 char limit) → Enable long paths or use shorter project path
 
 ---
 

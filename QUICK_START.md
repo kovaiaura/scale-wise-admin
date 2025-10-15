@@ -135,85 +135,169 @@ If you see "Browser Mode", something went wrong. See troubleshooting below.
 
 ## Common Issues and Solutions
 
-### Issue 1: "npm run tauri:dev" says "Missing script: tauri:dev"
+### 🔴 Issue 1: "npm run tauri:dev" says "Missing script: tauri:dev"
 
 **Solution**: You forgot Step 3! Edit `package.json` and add the scripts.
 
 ---
 
-### Issue 2: Rust Compilation Fails
+### 🔴 Issue 2: Rust Compilation Fails
 
 **Error**:
 ```
 error: linking with `link.exe` failed
+error: could not compile `windows-sys`
 ```
 
 **Solution**: Install Visual Studio Build Tools (Step 1.3 above)
 
----
-
-### Issue 3: "Failed to compile Rust code"
-
-**Try these**:
-
-1. **Update Rust**:
-   ```powershell
-   rustup update
-   ```
-
-2. **Clear Rust cache**:
-   ```powershell
-   cd src-tauri
-   cargo clean
-   cd ..
-   npm run tauri:dev
-   ```
-
-3. **Check Windows Defender**:
-   - Sometimes it blocks Rust compilation
-   - Add your project folder to exclusions
+**Detailed steps:**
+1. Download "Build Tools for Visual Studio 2022"
+2. Install "Desktop development with C++"
+3. Restart computer
+4. Verify: `cl.exe` in PowerShell should show compiler info
 
 ---
 
-### Issue 4: Port 8080 Already in Use
+### 🔴 Issue 3: Rust/Cargo Not Recognized
+
+**Error**:
+```
+'cargo' is not recognized as an internal or external command
+```
+
+**Solution**:
+1. Close ALL PowerShell windows
+2. Open NEW PowerShell window
+3. If still fails: Restart computer
+4. Still fails? Check PATH includes: `C:\Users\<YourName>\.cargo\bin`
+
+---
+
+### 🟡 Issue 4: Windows Defender Slowing Compilation
+
+**Symptom**: First build takes 10+ minutes or randomly fails
+
+**Solution**:
+1. Open Windows Security
+2. Virus & threat protection → Manage settings
+3. Add exclusions for:
+   - Your project folder
+   - `C:\Users\<YourName>\.cargo`
+   - `C:\Users\<YourName>\.rustup`
+4. Rebuild - should be 3-5x faster!
+
+---
+
+### 🟡 Issue 5: Port 8080 Already in Use
+
+**Error**:
+```
+Error: Port 8080 is already in use
+```
 
 **Solution**:
 
-**Option A**: Kill the process using port 8080
+**Option A**: Kill the process
 ```powershell
+# Find process using port 8080
 netstat -ano | findstr :8080
-# Note the PID (last column)
-taskkill /PID <PID> /F
+# Note the PID (last column, e.g., 12345)
+
+# Kill it (replace 12345 with your PID)
+taskkill /PID 12345 /F
+
+# Or kill all Node processes
+taskkill /IM node.exe /F
 ```
 
-**Option B**: Change the port in `vite.config.ts`:
-```typescript
-server: {
-  port: 8081,  // Change this
-  strictPort: true,
-}
-```
+**Option B**: Change the port
+1. Edit `vite.config.ts` → change port to `8081`
+2. Edit `src-tauri/tauri.conf.json` → change `devPath` to `http://localhost:8081`
 
-And `src-tauri/tauri.conf.json`:
-```json
-"devPath": "http://localhost:8081"
+---
+
+### 🔴 Issue 6: "Non-query execution failed - requires Tauri desktop environment"
+
+**This means the app is running in browser mode instead of desktop mode!**
+
+**Verify**:
+1. ✅ Are you running `npm run tauri:dev` (NOT `npm run dev`)?
+2. ✅ Did a Tauri **window** open (not a browser tab)?
+3. ✅ Press F12 in Tauri window and check console:
+   ```
+   [DB Init] Tauri available: true    ✅ Good!
+   [DB Init] Tauri available: false   ❌ Problem!
+   ```
+
+**Fix**:
+```powershell
+# Close everything
+taskkill /IM node.exe /F
+
+# Ensure dependencies installed
+npm install
+
+# Start in desktop mode
+npm run tauri:dev
 ```
 
 ---
 
-### Issue 5: "Non-query execution failed - this application requires Tauri desktop environment"
+### 🔴 Issue 7: WebView2 Runtime Missing
 
-**This means the app is running in browser mode instead of desktop mode.**
+**Error**: "WebView2 is not installed"
 
-**Verify**:
-1. Are you running `npm run tauri:dev` (not `npm run dev`)?
-2. Did Tauri window open, or are you using a web browser?
-3. Check console logs (F12) for Tauri detection
+**Solution**:
+1. Visit: https://developer.microsoft.com/microsoft-edge/webview2/
+2. Download "Evergreen Standalone Installer"
+3. Install and restart computer
 
-**Fix**:
-- Close everything
-- Restart PowerShell
-- Run `npm run tauri:dev` again
+---
+
+### 🟡 Issue 8: Database Lock Error
+
+**Error**:
+```
+Error: database is locked
+```
+
+**Solution**:
+```powershell
+# Kill all app instances
+taskkill /IM truckore-pro.exe /F
+taskkill /IM node.exe /F
+
+# Restart
+npm run tauri:dev
+```
+
+---
+
+### 🟢 Issue 9: First Compilation Very Slow (10+ Minutes)
+
+**This is NORMAL!** First build compiles 200+ Rust dependencies.
+
+Subsequent builds will be under 1 minute.
+
+**Speed up:**
+- Add Windows Defender exclusions (see Issue 4)
+- Close other heavy applications
+- Be patient! ☕
+
+---
+
+### 📚 Need More Help?
+
+See comprehensive troubleshooting: **`WINDOWS_TROUBLESHOOTING.md`**
+
+Covers 17+ issues including:
+- Visual Studio Build Tools detailed setup
+- Long path names (260 char limit)
+- Permission errors
+- Antivirus conflicts
+- Memory issues
+- Emergency recovery steps
 
 ---
 
