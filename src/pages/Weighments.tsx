@@ -7,7 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { useAuth } from '@/contexts/AuthContext';
-import { getBills } from '@/services/billService';
+import { getBills } from '@/services/unifiedServices';
 import { Bill } from '@/types/weighment';
 import BillPrintView from '@/components/operator/BillPrintView';
 
@@ -15,15 +15,26 @@ export default function Weighments() {
   const [searchTerm, setSearchTerm] = useState('');
   const [bills, setBills] = useState<Bill[]>([]);
   const [selectedBill, setSelectedBill] = useState<Bill | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const { user } = useAuth();
 
   useEffect(() => {
     loadBills();
   }, []);
 
-  const loadBills = () => {
-    const allBills = getBills();
-    setBills(allBills.reverse()); // Show newest first
+  const loadBills = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      const allBills = await getBills();
+      setBills(allBills.reverse()); // Show newest first
+    } catch (err) {
+      console.error('Error loading bills:', err);
+      setError('Failed to load bills. Please try again.');
+    } finally {
+      setLoading(false);
+    }
   };
 
   const filteredBills = bills.filter(
@@ -69,31 +80,43 @@ export default function Weighments() {
           </div>
         </CardHeader>
         <CardContent>
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead>
-                <tr className="border-b">
-                  <th className="text-left p-3 text-sm font-medium text-muted-foreground">Bill No</th>
-                  <th className="text-left p-3 text-sm font-medium text-muted-foreground">Date/Time</th>
-                  <th className="text-left p-3 text-sm font-medium text-muted-foreground">Vehicle</th>
-                  <th className="text-left p-3 text-sm font-medium text-muted-foreground">Party</th>
-                  <th className="text-left p-3 text-sm font-medium text-muted-foreground">Product</th>
-                  <th className="text-right p-3 text-sm font-medium text-muted-foreground">Gross</th>
-                  <th className="text-right p-3 text-sm font-medium text-muted-foreground">Tare</th>
-                  <th className="text-right p-3 text-sm font-medium text-muted-foreground">Net</th>
-                  <th className="text-right p-3 text-sm font-medium text-muted-foreground">Charges</th>
-                  <th className="text-right p-3 text-sm font-medium text-muted-foreground">Status</th>
-                </tr>
-              </thead>
-              <tbody>
-                {filteredBills.length === 0 ? (
-                  <tr>
-                    <td colSpan={10} className="text-center text-muted-foreground py-8">
-                      No bills found
-                    </td>
+          {error && (
+            <Alert variant="destructive" className="mb-4">
+              <AlertTitle>Error</AlertTitle>
+              <AlertDescription>{error}</AlertDescription>
+            </Alert>
+          )}
+          
+          {loading ? (
+            <div className="text-center py-8">
+              <p className="text-muted-foreground">Loading bills...</p>
+            </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead>
+                  <tr className="border-b">
+                    <th className="text-left p-3 text-sm font-medium text-muted-foreground">Bill No</th>
+                    <th className="text-left p-3 text-sm font-medium text-muted-foreground">Date/Time</th>
+                    <th className="text-left p-3 text-sm font-medium text-muted-foreground">Vehicle</th>
+                    <th className="text-left p-3 text-sm font-medium text-muted-foreground">Party</th>
+                    <th className="text-left p-3 text-sm font-medium text-muted-foreground">Product</th>
+                    <th className="text-right p-3 text-sm font-medium text-muted-foreground">Gross</th>
+                    <th className="text-right p-3 text-sm font-medium text-muted-foreground">Tare</th>
+                    <th className="text-right p-3 text-sm font-medium text-muted-foreground">Net</th>
+                    <th className="text-right p-3 text-sm font-medium text-muted-foreground">Charges</th>
+                    <th className="text-right p-3 text-sm font-medium text-muted-foreground">Status</th>
                   </tr>
-                ) : (
-                  filteredBills.map((bill) => (
+                </thead>
+                <tbody>
+                  {filteredBills.length === 0 ? (
+                    <tr>
+                      <td colSpan={10} className="text-center text-muted-foreground py-8">
+                        No bills found
+                      </td>
+                    </tr>
+                  ) : (
+                    filteredBills.map((bill) => (
                     <tr
                       key={bill.id}
                       onClick={() => setSelectedBill(bill)}
@@ -138,11 +161,12 @@ export default function Weighments() {
                         </Badge>
                       </td>
                     </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
-          </div>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
+          )}
         </CardContent>
       </Card>
 
