@@ -4,11 +4,24 @@
 import { invoke } from '@tauri-apps/api/tauri';
 import { Bill, BillStatus } from '@/types/weighment';
 
+// Verify Tauri is available before any operation
+function checkTauriAvailable(): void {
+  if (typeof window === 'undefined' || !('__TAURI__' in window)) {
+    const error = '❌ Tauri API not available! This app only works as a compiled desktop application.';
+    console.error(error);
+    throw new Error(error);
+  }
+}
+
 /**
  * Get all bills from SQLite database
  */
 export const getBills = async (): Promise<Bill[]> => {
+  checkTauriAvailable();
+  
   try {
+    console.log('📊 [Desktop BillService] Fetching bills from SQLite...');
+    
     const bills = await invoke<Bill[]>('execute_query', {
       query: `SELECT 
         id, bill_no as billNo, ticket_no as ticketNo,
@@ -27,13 +40,15 @@ export const getBills = async (): Promise<Bill[]> => {
       params: []
     });
     
+    console.log(`✅ [Desktop BillService] Retrieved ${bills.length} bills`);
+    
     return bills.map(bill => ({
       ...bill,
       capturedImage: null, // Deprecated field
     }));
   } catch (error) {
-    console.error('Failed to get bills:', error);
-    return [];
+    console.error('❌ [Desktop BillService] Failed to get bills:', error);
+    throw error;
   }
 };
 
@@ -41,15 +56,19 @@ export const getBills = async (): Promise<Bill[]> => {
  * Save a new bill to SQLite database
  */
 export const saveBill = async (bill: Bill): Promise<{ success: boolean; error: string | null }> => {
+  checkTauriAvailable();
+  
   try {
+    console.log('💾 [Desktop BillService] Saving bill:', bill.billNo);
+    
     await invoke('execute_non_query', {
       query: `INSERT INTO weighments (
         id, bill_no, ticket_no, vehicle_no, party_name, product_name,
         gross_weight, tare_weight, net_weight, charges,
         front_camera_image, back_camera_image, status,
         first_weight_type, first_vehicle_status, second_vehicle_status,
-        second_weight_timestamp, created_at, updated_at
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        second_weight_timestamp, created_at, updated_at, closed_at, remarks
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       params: [
         bill.id,
         bill.billNo,
@@ -69,13 +88,16 @@ export const saveBill = async (bill: Bill): Promise<{ success: boolean; error: s
         bill.secondVehicleStatus || null,
         bill.secondWeightTimestamp || null,
         bill.createdAt,
-        bill.updatedAt
+        bill.updatedAt,
+        bill.closedAt || null,
+        bill.remarks || null
       ]
     });
     
+    console.log('✅ [Desktop BillService] Bill saved successfully:', bill.billNo);
     return { success: true, error: null };
   } catch (error) {
-    console.error('Failed to save bill:', error);
+    console.error('❌ [Desktop BillService] Failed to save bill:', error);
     return { success: false, error: String(error) };
   }
 };

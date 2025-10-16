@@ -28,6 +28,7 @@ export interface Bill {
   secondWeightTimestamp?: string;
   closedAt?: string;
   printedAt?: string;
+  remarks?: string;
 }
 
 export interface OpenTicket {

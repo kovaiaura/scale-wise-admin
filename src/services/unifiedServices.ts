@@ -1,153 +1,80 @@
-// Unified Services - Routes between API and localStorage based on development mode
-// Checks localStorage 'developmentMode' flag to determine which service to use
+// Desktop-Only Services - Direct SQLite via Tauri
+// No API calls, no localStorage fallback, no mode switching
 
 import { Bill, OpenTicket, StoredTare, BillStatus } from '@/types/weighment';
 import { Vehicle, Party, Product } from '@/utils/mockData';
 
-// localStorage-based services (development mode)
-import * as localBillService from './billService';
-import * as localMasterService from './masterDataService';
-
-// Desktop mode services (Tauri SQLite)
+// Desktop services (Tauri SQLite only)
 import * as desktopBillService from './desktop/billService';
 import * as desktopOpenTicketService from './desktop/openTicketService';
 import * as desktopStoredTareService from './desktop/storedTareService';
 import * as desktopMasterDataService from './desktop/masterDataService';
 import * as desktopSerialNumberService from './desktop/serialNumberService';
 
-// API-based services (production mode)
-import * as apiBillService from './api/billService';
-import * as apiMasterService from './api/masterDataService';
-import * as apiOpenTicketService from './api/openTicketService';
-import * as apiStoredTareService from './api/storedTareService';
-import * as apiSerialNumberService from './api/serialNumberService';
-
-
-/**
- * Check if offline mode is enabled (Desktop mode or localStorage fallback)
- */
-const isOfflineMode = (): boolean => {
-  // Check build mode first (highest priority)
-  if (import.meta.env.VITE_APP_MODE === 'desktop') {
-    return true;
-  }
-  if (import.meta.env.VITE_APP_MODE === 'online') {
-    return false;
-  }
-  // Fallback to localStorage for development testing
-  const saved = localStorage.getItem('developmentMode');
-  return saved ? JSON.parse(saved) : false;
-};
-
 // ==================== BILL SERVICES ====================
 
 export const getBills = async (): Promise<Bill[]> => {
-  if (isOfflineMode()) {
-    return desktopBillService.getBills();
-  }
-  return apiBillService.getBills();
+  return desktopBillService.getBills();
 };
 
 export const saveBill = async (bill: Bill): Promise<{ success: boolean; error: string | null }> => {
-  if (isOfflineMode()) {
-    return desktopBillService.saveBill(bill);
-  }
-  return apiBillService.saveBill(bill);
+  return desktopBillService.saveBill(bill);
 };
 
 export const updateBillStatus = async (billId: string, status: BillStatus): Promise<Bill | null> => {
-  if (isOfflineMode()) {
-    return desktopBillService.updateBillStatus(billId, status);
-  }
-  return apiBillService.updateBillStatus(billId, status);
+  return desktopBillService.updateBillStatus(billId, status);
 };
 
 export const getBillById = async (billId: string): Promise<Bill | null> => {
-  if (isOfflineMode()) {
-    return desktopBillService.getBillById(billId);
-  }
-  return apiBillService.getBillById(billId);
+  return desktopBillService.getBillById(billId);
 };
 
 export const getOpenBills = async (): Promise<Bill[]> => {
-  if (isOfflineMode()) {
-    return desktopBillService.getOpenBills();
-  }
-  return apiBillService.getOpenBills();
+  return desktopBillService.getOpenBills();
 };
 
 export const getClosedBills = async (): Promise<Bill[]> => {
-  if (isOfflineMode()) {
-    return desktopBillService.getClosedBills();
-  }
-  return apiBillService.getClosedBills();
+  return desktopBillService.getClosedBills();
 };
 
 export const searchBills = async (query: string): Promise<Bill[]> => {
-  if (isOfflineMode()) {
-    return desktopBillService.searchBills(query);
-  }
-  return apiBillService.searchBills(query);
+  return desktopBillService.searchBills(query);
 };
 
 export const filterBillsByDateRange = async (startDate: string, endDate: string): Promise<Bill[]> => {
-  if (isOfflineMode()) {
-    return desktopBillService.filterBillsByDateRange(startDate, endDate);
-  }
-  return apiBillService.filterBillsByDateRange(startDate, endDate);
+  return desktopBillService.filterBillsByDateRange(startDate, endDate);
 };
 
 // ==================== OPEN TICKET SERVICES ====================
 
 export const getOpenTickets = async (): Promise<OpenTicket[]> => {
-  if (isOfflineMode()) {
-    return desktopOpenTicketService.getOpenTickets();
-  }
-  return apiOpenTicketService.getOpenTickets();
+  return desktopOpenTicketService.getOpenTickets();
 };
 
 export const saveOpenTicket = async (ticket: OpenTicket): Promise<{ success: boolean; error: string | null }> => {
-  if (isOfflineMode()) {
-    return desktopOpenTicketService.saveOpenTicket(ticket);
-  }
-  return apiOpenTicketService.saveOpenTicket(ticket);
+  return desktopOpenTicketService.saveOpenTicket(ticket);
 };
 
 export const removeOpenTicket = async (ticketId: string): Promise<{ success: boolean; error: string | null }> => {
-  if (isOfflineMode()) {
-    return desktopOpenTicketService.removeOpenTicket(ticketId);
-  }
-  return apiOpenTicketService.removeOpenTicket(ticketId);
+  return desktopOpenTicketService.removeOpenTicket(ticketId);
 };
 
 export const getOpenTicketById = async (ticketId: string): Promise<OpenTicket | null> => {
-  if (isOfflineMode()) {
-    return desktopOpenTicketService.getOpenTicketById(ticketId);
-  }
-  return apiOpenTicketService.getOpenTicketById(ticketId);
+  return desktopOpenTicketService.getOpenTicketById(ticketId);
 };
 
 // ==================== STORED TARE SERVICES ====================
 
 export const getStoredTares = async (): Promise<StoredTare[]> => {
-  if (isOfflineMode()) {
-    return desktopStoredTareService.getStoredTares();
-  }
-  return apiStoredTareService.getStoredTares();
+  return desktopStoredTareService.getStoredTares();
 };
 
 export const getStoredTareByVehicle = async (vehicleNo: string): Promise<StoredTare | null> => {
-  if (isOfflineMode()) {
-    return desktopStoredTareService.getStoredTareByVehicle(vehicleNo);
-  }
-  return apiStoredTareService.getStoredTareByVehicle(vehicleNo);
+  return desktopStoredTareService.getStoredTareByVehicle(vehicleNo);
 };
 
 export const saveStoredTare = async (tare: StoredTare): Promise<{ success: boolean; error: string | null }> => {
-  if (isOfflineMode()) {
-    return desktopStoredTareService.saveStoredTare(tare);
-  }
-  return apiStoredTareService.saveStoredTare(tare);
+  return desktopStoredTareService.saveStoredTare(tare);
 };
 
 export const isTareExpired = (tare: StoredTare): boolean => {
@@ -155,10 +82,7 @@ export const isTareExpired = (tare: StoredTare): boolean => {
 };
 
 export const getValidStoredTare = async (vehicleNo: string): Promise<StoredTare | null> => {
-  if (isOfflineMode()) {
-    return desktopStoredTareService.getValidStoredTare(vehicleNo);
-  }
-  return apiStoredTareService.getValidStoredTare(vehicleNo);
+  return desktopStoredTareService.getValidStoredTare(vehicleNo);
 };
 
 export const getTareExpiryInfo = async (
@@ -169,63 +93,39 @@ export const getTareExpiryInfo = async (
   expiryDate: string;
   hoursRemaining: number;
 } | null> => {
-  if (isOfflineMode()) {
-    const tare = await desktopStoredTareService.getStoredTareByVehicle(vehicleNo);
-    if (!tare) return null;
-    return desktopStoredTareService.getTareExpiryInfo(tare);
-  }
-  return apiStoredTareService.getTareExpiryInfo(vehicleNo);
+  const tare = await desktopStoredTareService.getStoredTareByVehicle(vehicleNo);
+  if (!tare) return null;
+  return desktopStoredTareService.getTareExpiryInfo(tare);
 };
 
 // ==================== MASTER DATA SERVICES ====================
 
 export const getVehicles = async (): Promise<Vehicle[]> => {
-  if (isOfflineMode()) {
-    return desktopMasterDataService.getVehicles();
-  }
-  return apiMasterService.getVehicles();
+  return desktopMasterDataService.getVehicles();
 };
 
 export const getParties = async (): Promise<Party[]> => {
-  if (isOfflineMode()) {
-    return desktopMasterDataService.getParties();
-  }
-  return apiMasterService.getParties();
+  return desktopMasterDataService.getParties();
 };
 
 export const getProducts = async (): Promise<Product[]> => {
-  if (isOfflineMode()) {
-    return desktopMasterDataService.getProducts();
-  }
-  return apiMasterService.getProducts();
+  return desktopMasterDataService.getProducts();
 };
 
 export const getVehicleByNumber = async (vehicleNo: string): Promise<Vehicle | undefined> => {
-  if (isOfflineMode()) {
-    return desktopMasterDataService.getVehicleByNumber(vehicleNo);
-  }
-  return apiMasterService.getVehicleByNumber(vehicleNo);
+  return desktopMasterDataService.getVehicleByNumber(vehicleNo);
 };
 
 export const getPartyByName = async (partyName: string): Promise<Party | undefined> => {
-  if (isOfflineMode()) {
-    return desktopMasterDataService.getPartyByName(partyName);
-  }
-  return apiMasterService.getPartyByName(partyName);
+  return desktopMasterDataService.getPartyByName(partyName);
 };
 
 export const getProductByName = async (productName: string): Promise<Product | undefined> => {
-  if (isOfflineMode()) {
-    return desktopMasterDataService.getProductByName(productName);
-  }
-  return apiMasterService.getProductByName(productName);
+  return desktopMasterDataService.getProductByName(productName);
 };
 
 export const getNextSerialNo = async (): Promise<string> => {
-  if (isOfflineMode()) {
-    return desktopSerialNumberService.getNextSerialNumber();
-  }
-  return apiMasterService.getNextSerialNo();
+  return desktopSerialNumberService.getNextSerialNumber();
 };
 
 // ==================== CAMERA SERVICES ====================
@@ -235,56 +135,34 @@ export const captureBothCameras = async (): Promise<{
   rearImage: string | null;
   error: string | null;
 }> => {
-  if (isOfflineMode()) {
-    // In offline mode, return placeholder images
-    return Promise.resolve({
-      frontImage: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==',
-      rearImage: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==',
-      error: null,
-    });
-  }
-  
-  // In production mode, use actual camera service
-  const { captureBothCameras: apiCapture } = await import('./cameraService');
-  return apiCapture();
+  // Desktop mode: return placeholder images
+  return Promise.resolve({
+    frontImage: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==',
+    rearImage: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==',
+    error: null,
+  });
 };
 
 // ==================== SERIAL NUMBER SERVICES ====================
 
 export const SerialNumberService = {
   getConfig: async () => {
-    if (isOfflineMode()) {
-      const config = await desktopSerialNumberService.getSerialNumberConfig();
-      return { data: config, error: null };
-    } else {
-      return await apiSerialNumberService.getSerialNumberConfig();
-    }
+    const config = await desktopSerialNumberService.getSerialNumberConfig();
+    return { data: config, error: null };
   },
 
   updateConfig: async (config: desktopSerialNumberService.SerialNumberConfig & { resetCounterNow?: boolean }) => {
-    if (isOfflineMode()) {
-      const updatedConfig = await desktopSerialNumberService.updateSerialNumberConfig(config);
-      return { data: updatedConfig, error: null };
-    } else {
-      return await apiSerialNumberService.updateSerialNumberConfig(config);
-    }
+    const updatedConfig = await desktopSerialNumberService.updateSerialNumberConfig(config);
+    return { data: updatedConfig, error: null };
   },
 
   getNext: async () => {
-    if (isOfflineMode()) {
-      const serialNo = await desktopSerialNumberService.getNextSerialNumber();
-      return { data: { serialNo }, error: null };
-    } else {
-      return await apiSerialNumberService.getNextSerialNumber();
-    }
+    const serialNo = await desktopSerialNumberService.getNextSerialNumber();
+    return { data: { serialNo }, error: null };
   },
 
   previewFormat: async (config: Partial<desktopSerialNumberService.SerialNumberConfig>) => {
-    if (isOfflineMode()) {
-      const preview = desktopSerialNumberService.previewSerialNumber(config);
-      return { data: { preview }, error: null };
-    } else {
-      return await apiSerialNumberService.previewSerialNumber(config);
-    }
+    const preview = desktopSerialNumberService.previewSerialNumber(config);
+    return { data: { preview }, error: null };
   }
 };

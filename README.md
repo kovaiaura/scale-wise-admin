@@ -1,73 +1,69 @@
-# Welcome to your Lovable project
+# Truckore Pro - Desktop Weighbridge Management System
 
-## Project info
+**Pure Desktop Application** - Built with Tauri + React + SQLite
+
+This is a desktop-only application. All data is stored locally in SQLite database.
+No internet connection or backend server required.
+
+## Project Info
 
 **URL**: https://lovable.dev/projects/45b2d75f-daf3-4d14-b514-85db289df096
 
-## How can I edit this code?
+## Building the Desktop App
 
-There are several ways of editing your application.
+```bash
+# Install dependencies
+npm install
 
-**Use Lovable**
-
-Simply visit the [Lovable Project](https://lovable.dev/projects/45b2d75f-daf3-4d14-b514-85db289df096) and start prompting.
-
-Changes made via Lovable will be committed automatically to this repo.
-
-**Use your preferred IDE**
-
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
-
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
-
-Follow these steps:
-
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
-
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
-
-# Step 3: Install the necessary dependencies.
-npm i
-
-# Step 4: Start the development server with auto-reloading and an instant preview.
-npm run dev
+# Build desktop application
+npm run tauri:build
 ```
 
-**Edit a file directly in GitHub**
+Find the installer in `src-tauri/target/release/bundle/`
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+## Development
 
-**Use GitHub Codespaces**
+```bash
+# Start development server for UI development
+npm run dev
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+# Start Tauri development mode (with database)
+npm run tauri:dev
+```
 
-## What technologies are used for this project?
+## Technologies
 
-This project is built with:
+- **Frontend**: React + TypeScript + Vite + Tailwind CSS + shadcn-ui
+- **Desktop Runtime**: Tauri
+- **Database**: SQLite (via Tauri)
+- **State Management**: React Context + TanStack Query
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
+## Features
 
-## How can I deploy this project?
+- ✅ **Pure Offline Operation** - No internet required
+- ✅ **SQLite Database** - All data stored locally
+- ✅ **Multi-Platform** - Windows, macOS, Linux
+- ✅ **Weighbridge Integration** - Serial/Network connectivity
+- ✅ **CCTV Camera Support** - Capture weighment images
+- ✅ **Bill Management** - Complete weighment workflow
+- ✅ **Master Data** - Vehicles, Parties, Products
+- ✅ **Reports & Analytics** - Export to Excel/PDF
 
-Simply open [Lovable](https://lovable.dev/projects/45b2d75f-daf3-4d14-b514-85db289df096) and click on Share -> Publish.
+## Documentation
 
-## Can I connect a custom domain to my Lovable project?
+See the following guides for more information:
+- `DESKTOP_APP_SETUP_GUIDE.md` - Desktop app setup and configuration
+- `DATABASE_DOCUMENTATION.md` - Database schema and operations
+- `FRONTEND_DOCUMENTATION.md` - UI components and architecture
 
-Yes, you can!
+## Deployment
 
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
+This is a desktop application that must be compiled and distributed as an installer.
 
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/features/custom-domain#custom-domain)
+1. Build the application: `npm run tauri:build`
+2. Distribute the installer from `src-tauri/target/release/bundle/`
+3. Users install and run locally on their machines
+
+## License
+
+Proprietary - All Rights Reserved
