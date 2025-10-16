@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { HardDrive, Download, Upload, Trash2, FileSpreadsheet, Database, FolderOpen } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -9,6 +9,8 @@ import { getBills } from '@/services/unifiedServices';
 
 export default function DesktopDataManager() {
   const { toast } = useToast();
+  const [storageLocation, setStorageLocation] = useState('Browser LocalStorage');
+  const [isTauriMode, setIsTauriMode] = useState(false);
   const [dbSize, setDbSize] = useState(() => {
     // Calculate approximate localStorage size
     let total = 0;
@@ -19,6 +21,24 @@ export default function DesktopDataManager() {
     }
     return (total / 1024).toFixed(2); // KB
   });
+
+  useEffect(() => {
+    // Check if running in Tauri
+    const checkTauriMode = async () => {
+      try {
+        if (typeof window !== 'undefined' && window.__TAURI__) {
+          setIsTauriMode(true);
+          // Get actual database path from Tauri
+          const { appDataDir } = await import('@tauri-apps/api/path');
+          const dataPath = await appDataDir();
+          setStorageLocation(`${dataPath}data/truckore_data.db`);
+        }
+      } catch (error) {
+        console.log('Not in Tauri mode');
+      }
+    };
+    checkTauriMode();
+  }, []);
 
   const handleBackupDatabase = () => {
     try {
@@ -152,7 +172,9 @@ export default function DesktopDataManager() {
               <HardDrive className="h-4 w-4 text-muted-foreground" />
               <span className="text-sm font-medium">Storage Location</span>
             </div>
-            <p className="text-xs text-muted-foreground">Browser LocalStorage</p>
+            <p className="text-xs text-muted-foreground break-all">
+              {isTauriMode ? storageLocation : 'Browser LocalStorage'}
+            </p>
           </div>
 
           <div className="p-4 border rounded-lg bg-muted/50">

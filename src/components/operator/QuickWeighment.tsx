@@ -8,7 +8,11 @@ import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useNotification } from '@/contexts/NotificationContext';
+import { useToast } from '@/hooks/use-toast';
 import { mockVehicles, mockProducts } from '@/utils/mockData';
+import { v4 as uuidv4 } from 'uuid';
+import { saveBill, SerialNumberService } from '@/services/unifiedServices';
+import { Bill } from '@/types/weighment';
 
 interface QuickWeighmentProps {
   liveWeight: number;
@@ -19,16 +23,71 @@ export default function QuickWeighment({ liveWeight, isStable }: QuickWeighmentP
   const [vehicleNo, setVehicleNo] = useState('');
   const [customerName, setCustomerName] = useState('');
   const [productName, setProductName] = useState('');
+  const [isCapturing, setIsCapturing] = useState(false);
   const { success } = useNotification();
+  const { toast } = useToast();
 
-  const handleCapture = () => {
+  const handleCapture = async () => {
     if (!vehicleNo || !customerName || !productName) return;
-    success(`One-time weighment captured! Weight: ${liveWeight} kg. Bill generated (CLOSED).`);
     
-    // Reset form
-    setVehicleNo('');
-    setCustomerName('');
-    setProductName('');
+    setIsCapturing(true);
+    
+    try {
+      // Get next serial number
+      const serialNoResponse = await SerialNumberService.getNext();
+      const serialNo = serialNoResponse.data?.serialNo || 'TEMP';
+      
+      // Create CLOSED bill for one-time weighment
+      const timestamp = new Date().toISOString();
+      const bill: Bill = {
+        id: uuidv4(),
+        billNo: serialNo,
+        ticketNo: serialNo,
+        vehicleNo,
+        partyName: customerName,
+        productName,
+        grossWeight: liveWeight,
+        tareWeight: 0,
+        netWeight: liveWeight,
+        charges: 0,
+        capturedImage: null,
+        frontImage: null,
+        rearImage: null,
+        status: 'CLOSED',
+        createdAt: timestamp,
+        updatedAt: timestamp,
+        closedAt: timestamp,
+        firstWeightType: 'one-time'
+      };
+      
+      // Save to database
+      const result = await saveBill(bill);
+      
+      if (result.error) {
+        toast({
+          title: "Save Failed",
+          description: result.error,
+          variant: "destructive"
+        });
+        return;
+      }
+      
+      success(`One-time weighment captured! Bill #${serialNo} saved.`);
+      
+      // Reset form
+      setVehicleNo('');
+      setCustomerName('');
+      setProductName('');
+      
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to save bill",
+        variant: "destructive"
+      });
+    } finally {
+      setIsCapturing(false);
+    }
   };
 
   return (
@@ -144,11 +203,11 @@ export default function QuickWeighment({ liveWeight, isStable }: QuickWeighmentP
 
             <Button
               onClick={handleCapture}
-              disabled={!isStable || !vehicleNo || !customerName || !productName}
+              disabled={!isStable || !vehicleNo || !customerName || !productName || isCapturing}
               className="w-full"
             >
               <Check className="mr-2 h-4 w-4" />
-              Capture & Generate Bill
+              {isCapturing ? 'Saving...' : 'Capture & Generate Bill'}
             </Button>
           </CardContent>
         </Card>
