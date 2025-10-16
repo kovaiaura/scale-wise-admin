@@ -8,6 +8,9 @@ import { Vehicle, Party, Product } from '@/utils/mockData';
 import * as localBillService from './billService';
 import * as localMasterService from './masterDataService';
 
+// Desktop mode services (Tauri SQLite)
+import * as desktopBillService from './desktop/billService';
+
 // API-based services (production mode)
 import * as apiBillService from './api/billService';
 import * as apiMasterService from './api/masterDataService';
@@ -38,57 +41,56 @@ const isOfflineMode = (): boolean => {
 
 export const getBills = async (): Promise<Bill[]> => {
   if (isOfflineMode()) {
-    return Promise.resolve(localBillService.getBills());
+    return desktopBillService.getBills();
   }
   return apiBillService.getBills();
 };
 
 export const saveBill = async (bill: Bill): Promise<{ success: boolean; error: string | null }> => {
   if (isOfflineMode()) {
-    localBillService.saveBill(bill);
-    return Promise.resolve({ success: true, error: null });
+    return desktopBillService.saveBill(bill);
   }
   return apiBillService.saveBill(bill);
 };
 
 export const updateBillStatus = async (billId: string, status: BillStatus): Promise<Bill | null> => {
   if (isOfflineMode()) {
-    return Promise.resolve(localBillService.updateBillStatus(billId, status));
+    return desktopBillService.updateBillStatus(billId, status);
   }
   return apiBillService.updateBillStatus(billId, status);
 };
 
 export const getBillById = async (billId: string): Promise<Bill | null> => {
   if (isOfflineMode()) {
-    return Promise.resolve(localBillService.getBillById(billId));
+    return desktopBillService.getBillById(billId);
   }
   return apiBillService.getBillById(billId);
 };
 
 export const getOpenBills = async (): Promise<Bill[]> => {
   if (isOfflineMode()) {
-    return Promise.resolve(localBillService.getOpenBills());
+    return desktopBillService.getOpenBills();
   }
   return apiBillService.getOpenBills();
 };
 
 export const getClosedBills = async (): Promise<Bill[]> => {
   if (isOfflineMode()) {
-    return Promise.resolve(localBillService.getClosedBills());
+    return desktopBillService.getClosedBills();
   }
   return apiBillService.getClosedBills();
 };
 
 export const searchBills = async (query: string): Promise<Bill[]> => {
   if (isOfflineMode()) {
-    return Promise.resolve(localBillService.searchBills(query));
+    return desktopBillService.searchBills(query);
   }
   return apiBillService.searchBills(query);
 };
 
 export const filterBillsByDateRange = async (startDate: string, endDate: string): Promise<Bill[]> => {
   if (isOfflineMode()) {
-    return Promise.resolve(localBillService.filterBillsByDateRange(startDate, endDate));
+    return desktopBillService.filterBillsByDateRange(startDate, endDate);
   }
   return apiBillService.filterBillsByDateRange(startDate, endDate);
 };
