@@ -1,5 +1,5 @@
 // Desktop Open Ticket Service - Uses Tauri SQLite Database
-import { invoke } from '@tauri-apps/api/core';
+import { invoke } from '@tauri-apps/api/tauri';
 import { OpenTicket } from '@/types/weighment';
 
 /**

@@ -1,5 +1,5 @@
 // Desktop Master Data Service - Uses Tauri SQLite Database
-import { invoke } from '@tauri-apps/api/core';
+import { invoke } from '@tauri-apps/api/tauri';
 import { Vehicle, Party, Product } from '@/utils/mockData';
 import * as serialNumberService from './serialNumberService';
 

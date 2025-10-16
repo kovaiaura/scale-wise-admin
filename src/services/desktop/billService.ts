@@ -1,7 +1,7 @@
 // Desktop Bill Service - Tauri Commands
 // Replaces HTTP API calls with SQLite database operations via Tauri
 
-import { invoke } from '@tauri-apps/api/core';
+import { invoke } from '@tauri-apps/api/tauri';
 import { Bill, BillStatus } from '@/types/weighment';
 
 /**

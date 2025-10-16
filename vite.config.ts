@@ -23,7 +23,7 @@ export default defineConfig(({ mode }) => ({
   build: {
     rollupOptions: {
       // Externalize Tauri APIs for browser builds (they're only available in desktop)
-      external: mode !== 'desktop' ? ['@tauri-apps/api/tauri', '@tauri-apps/api'] : [],
+      external: mode !== 'desktop' ? ['@tauri-apps/api'] : [],
     },
   },
 }));

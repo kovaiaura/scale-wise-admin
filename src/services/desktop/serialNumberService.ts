@@ -1,5 +1,5 @@
 // Desktop Serial Number Service - Uses Tauri SQLite Database and App Config
-import { invoke } from '@tauri-apps/api/core';
+import { invoke } from '@tauri-apps/api/tauri';
 
 export interface SerialNumberConfig {
   prefix: string;

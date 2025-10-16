@@ -23,7 +23,7 @@ async function initTauriAPI() {
     }
     
     // @ts-ignore - Dynamic import for Tauri API (only available in desktop mode)
-    const tauriApi = await import('@tauri-apps/api/core');
+    const tauriApi = await import('@tauri-apps/api/tauri');
     tauriInvoke = tauriApi.invoke;
     console.log('✅ Tauri API initialized successfully');
   } catch (error) {
