@@ -57,27 +57,54 @@ export const generateSerialNumber = (config: SerialNumberConfig): string => {
  */
 export const getSerialNumberConfig = async (): Promise<SerialNumberConfig> => {
   try {
-    const configJson = await invoke<string | null>('execute_query', {
+    console.log('[SerialNumber] Fetching serial number config from database...');
+    
+    const results = await invoke<any[]>('execute_query', {
       query: 'SELECT value FROM app_config WHERE key = ?',
       params: ['serial_number_config']
-    }).then(results => {
-      if (Array.isArray(results) && results.length > 0) {
-        return results[0].value;
-      }
-      return null;
     });
 
-    if (configJson) {
-      return JSON.parse(configJson);
+    console.log('[SerialNumber] Query results:', results);
+
+    // Check if we got results
+    if (Array.isArray(results) && results.length > 0 && results[0].value) {
+      const configJson = results[0].value;
+      console.log('[SerialNumber] Found config JSON:', configJson);
+      
+      const config = JSON.parse(configJson);
+      console.log('[SerialNumber] Parsed config:', config);
+      return config;
     }
     
     // Initialize with default config if not found
-    await updateSerialNumberConfig(DEFAULT_CONFIG);
+    console.log('[SerialNumber] No config found, initializing with defaults...');
+    await initializeSerialNumberConfig();
     return DEFAULT_CONFIG;
   } catch (error) {
-    console.error('Error fetching serial number config:', error);
+    console.error('[SerialNumber] Error fetching serial number config:', error);
+    // Try to initialize if error occurred
+    try {
+      await initializeSerialNumberConfig();
+    } catch (initError) {
+      console.error('[SerialNumber] Failed to initialize config:', initError);
+    }
     return DEFAULT_CONFIG;
   }
+};
+
+/**
+ * Initialize serial number config in database
+ */
+const initializeSerialNumberConfig = async (): Promise<void> => {
+  console.log('[SerialNumber] Initializing config in database...');
+  await invoke('execute_non_query', {
+    query: `
+      INSERT OR REPLACE INTO app_config (key, value, updated_at)
+      VALUES (?, ?, CURRENT_TIMESTAMP)
+    `,
+    params: ['serial_number_config', JSON.stringify(DEFAULT_CONFIG)]
+  });
+  console.log('[SerialNumber] Config initialized successfully');
 };
 
 /**
@@ -87,14 +114,19 @@ export const updateSerialNumberConfig = async (
   config: SerialNumberConfig & { resetCounterNow?: boolean }
 ): Promise<SerialNumberConfig> => {
   try {
+    console.log('[SerialNumber] Updating config...', config);
+    
     // Handle counter reset
     if (config.resetCounterNow) {
       config.currentCounter = config.counterStart;
       config.lastResetDate = new Date().toISOString();
+      console.log('[SerialNumber] Counter reset to:', config.currentCounter);
     }
 
     const configToSave = { ...config };
     delete (configToSave as any).resetCounterNow;
+
+    console.log('[SerialNumber] Saving config to database:', configToSave);
 
     // Upsert configuration
     await invoke('execute_non_query', {
@@ -105,9 +137,10 @@ export const updateSerialNumberConfig = async (
       params: ['serial_number_config', JSON.stringify(configToSave)]
     });
 
+    console.log('[SerialNumber] Config saved successfully');
     return configToSave;
   } catch (error) {
-    console.error('Error updating serial number config:', error);
+    console.error('[SerialNumber] Error updating serial number config:', error);
     throw error;
   }
 };
@@ -146,23 +179,33 @@ const checkAndPerformAutoReset = (config: SerialNumberConfig): SerialNumberConfi
  */
 export const getNextSerialNumber = async (): Promise<string> => {
   try {
+    console.log('[SerialNumber] Getting next serial number...');
+    
     let config = await getSerialNumberConfig();
+    console.log('[SerialNumber] Current config:', config);
     
     // Check for auto-reset
+    const originalCounter = config.currentCounter;
     config = checkAndPerformAutoReset(config);
+    if (config.currentCounter !== originalCounter) {
+      console.log('[SerialNumber] Counter auto-reset from', originalCounter, 'to', config.currentCounter);
+    }
     
     // Generate serial number with current counter
     const serialNo = generateSerialNumber(config);
+    console.log('[SerialNumber] Generated serial number:', serialNo);
     
     // Increment counter for next use
     config.currentCounter += 1;
+    console.log('[SerialNumber] Incrementing counter to:', config.currentCounter);
     
     // Save updated configuration
     await updateSerialNumberConfig(config);
+    console.log('[SerialNumber] Serial number generated successfully:', serialNo);
     
     return serialNo;
   } catch (error) {
-    console.error('Error generating next serial number:', error);
+    console.error('[SerialNumber] Error generating next serial number:', error);
     throw error;
   }
 };
